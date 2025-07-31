@@ -1,0 +1,84 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+Beat Orbit is a rhythm game built in Godot 4.4 for GMTK Game Jam 2025 (theme: "Loop"). Players time button presses as arrows rotate around a drum wheel, building drum patterns that loop continuously.
+
+## Key Development Commands
+
+### Running the Game
+```bash
+# Open in Godot Editor
+godot project.godot
+
+# Run specific scene
+godot scenes/game/game.tscn
+
+# Run with debugging
+godot --verbose --debug project.godot
+```
+
+### Web Export
+```bash
+# Export for web (requires export templates)
+godot --export "HTML5" build/index.html
+
+# Test web build locally
+python -m http.server -d build/
+```
+
+## Architecture Overview
+
+### Scene Structure
+- **Game.tscn**: Main game scene containing DrumWheel and UI
+- **DrumWheel**: Core gameplay node that manages rotating arrows and hit detection
+- **Arrow.tscn**: Individual arrow instances that rotate around the wheel
+- **Pattern System**: Records player inputs into looping drum patterns (2-4 measures)
+
+### Core Classes
+
+**DrumWheel.gd** (`scripts/game/drum_wheel.gd`):
+- Manages arrow spawning and rotation synced to BPM
+- Handles hit detection with timing windows (Perfect/Good/Miss)
+- Records and plays back drum patterns
+- Emits signals for drum hits and pattern completion
+
+**Arrow.gd** (`scripts/game/arrow.gd`):
+- Visual representation of drum types (Kick=Red, Snare=Green, HiHat=Blue)
+- Handles color coding and glow effects
+
+### Autoload Scripts
+- **GlobalAudio**: Manages volume levels and audio playback
+- **GameData**: Stores game state, current level, scores, and BPM settings
+
+### Input System
+- Single button gameplay: `hit_drum` (Space/Enter/Click)
+- Additional inputs: `pause` (ESC/P), `restart` (R)
+
+## Audio Implementation
+- 48kHz sample rate optimized for web
+- Low latency settings (20ms) for responsive gameplay
+- Drum samples needed: kick, snare, hi-hat (3 velocity layers each)
+- Beat synchronization uses `beat_timer` in DrumWheel
+
+## Visual Style
+- Synthwave/Tron aesthetic with neon glows
+- Color palette: Deep purple (#1a0033), cyan (#00ffff), hot pink (#ff006e)
+- Heavy use of emission shaders and bloom effects
+- Geometric shapes, avoid pixel art
+
+## Current Development State
+- Core scripts created (DrumWheel, Arrow)
+- Input mapping complete
+- Audio buses configured
+- Scene assembly needed
+- Visual assets pending
+- Level progression system not implemented
+
+## Testing Considerations
+- Target 60 FPS on web
+- Test in Chrome, Firefox, Safari
+- Check audio latency on itch.io
+- Verify pattern recording/playback accuracy
+- Monitor memory usage during extended play

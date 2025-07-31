@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3 uid="uid://bq5v4npmmltgx"]
+
+[ext_resource type="Script" uid="uid://cwlk84px0jcu7" path="res://scripts/game/drum_wheel.gd" id="1_sul5r"]
+
+[node name="Game" type="Node2D"]
+
+[node name="Background" type="Node2D" parent="."]
+
+[node name="Grid" type="Sprite2D" parent="Background"]
+
+[node name="DrumWheel" type="Node2D" parent="."]
+script = ExtResource("1_sul5r")
+
+[node name="HitZone" type="Node2D" parent="DrumWheel"]
+
+[node name="HitZoneVisual" type="Sprite2D" parent="DrumWheel/HitZone"]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="BeatIndicator" type="Label" parent="UI"]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="ScoreLabel" type="Label" parent="UI"]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="PatternDisplay" type="Label" parent="UI"]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="AudioPlayers" type="Node" parent="."]
+
+[node name="KickPlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
+
+[node name="SnarePlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
+
+[node name="HiHatPlayer" type="AudioStreamPlayer" parent="AudioPlayers"]

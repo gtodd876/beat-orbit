@@ -2,3 +2,5 @@
 .godot/
 /android/
 /assets
+/references
+.DS_Store
