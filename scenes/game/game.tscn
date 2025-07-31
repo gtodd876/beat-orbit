@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://bq5v4npmmltgx"]
+[gd_scene load_steps=5 format=3 uid="uid://bq5v4npmmltgx"]
 
 [ext_resource type="Script" uid="uid://cwlk84px0jcu7" path="res://scripts/game/drum_wheel.gd" id="1_sul5r"]
+[ext_resource type="Script" uid="uid://b67jgv8j4xtj8" path="res://scripts/game/hit_zone_visual.gd" id="2_7h61r"]
+[ext_resource type="PackedScene" uid="uid://cqxykiuk7i18o" path="res://scenes/game/arrow.tscn" id="2_kelw5"]
+[ext_resource type="Script" uid="uid://bwme5j4d5mudu" path="res://scripts/ui/hud.gd" id="3_0sr1o"]
 
 [node name="Game" type="Node2D"]
 
@@ -9,25 +12,86 @@
 [node name="Grid" type="Sprite2D" parent="Background"]
 
 [node name="DrumWheel" type="Node2D" parent="."]
+position = Vector2(576, 324)
 script = ExtResource("1_sul5r")
+arrow_scene = ExtResource("2_kelw5")
 
 [node name="HitZone" type="Node2D" parent="DrumWheel"]
 
 [node name="HitZoneVisual" type="Sprite2D" parent="DrumWheel/HitZone"]
+script = ExtResource("2_7h61r")
 
 [node name="UI" type="CanvasLayer" parent="."]
+script = ExtResource("3_0sr1o")
 
-[node name="BeatIndicator" type="Label" parent="UI"]
-offset_right = 40.0
-offset_bottom = 23.0
+[node name="HUD" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="ScoreLabel" type="Label" parent="UI"]
-offset_right = 40.0
-offset_bottom = 23.0
+[node name="BeatIndicator" type="Label" parent="UI/HUD"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 200.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 32
+text = "BEAT"
 
-[node name="PatternDisplay" type="Label" parent="UI"]
-offset_right = 40.0
-offset_bottom = 23.0
+[node name="ScoreLabel" type="Label" parent="UI/HUD"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 80.0
+offset_right = 300.0
+offset_bottom = 160.0
+theme_override_font_sizes/font_size = 20
+text = "Score: 0
+Combo: 0"
+
+[node name="PatternDisplay" type="Label" parent="UI/HUD"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 20.0
+offset_right = 300.0
+offset_bottom = 80.0
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 18
+text = "Pattern: "
+horizontal_alignment = 1
+
+[node name="InstructionsLabel" type="Label" parent="UI/HUD"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -120.0
+offset_right = 300.0
+offset_bottom = -80.0
+theme_override_font_sizes/font_size = 24
+text = "Hit SPACE when arrows enter the cyan zone!"
+horizontal_alignment = 1
+
+[node name="ControlsLabel" type="Label" parent="UI/HUD"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -60.0
+offset_right = 300.0
+offset_bottom = -20.0
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "[SPACE] Hit Drum | [ESC] Pause | [R] Restart"
+horizontal_alignment = 1
 
 [node name="AudioPlayers" type="Node" parent="."]
 

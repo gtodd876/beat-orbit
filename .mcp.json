@@ -1,0 +1,15 @@
+{
+    "mcpServers": {
+        "godot-mcp-server": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "/Users/todd/dev/godot-mcp/build/index.js"
+            ],
+            "env": {
+                "DEBUG": "true",
+                "GODOT_PATH": "/Applications/Godot.app"
+            }
+        }
+    }
+}

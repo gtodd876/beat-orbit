@@ -180,20 +180,47 @@ func play_current_beat():
 
 
 func play_drum_sound(drum_type: DrumType):
-	# This will be connected to actual audio players
+	# Play drum sounds through audio players
+	var audio_players = get_node("/root/Game/AudioPlayers")
+	if not audio_players:
+		return
+
 	match drum_type:
 		DrumType.KICK:
-			print("KICK!")
+			var kick_player = audio_players.get_node("KickPlayer")
+			if kick_player and kick_player.stream:
+				kick_player.play()
 		DrumType.SNARE:
-			print("SNARE!")
+			var snare_player = audio_players.get_node("SnarePlayer")
+			if snare_player and snare_player.stream:
+				snare_player.play()
 		DrumType.HIHAT:
-			print("HAT!")
+			var hihat_player = audio_players.get_node("HiHatPlayer")
+			if hihat_player and hihat_player.stream:
+				hihat_player.play()
 
 
 func show_hit_feedback(color: Color):
-	# Visual feedback for hits - we'll implement this with particles/effects
-	modulate = color
-	create_tween().tween_property(self, "modulate", Color.WHITE, 0.2)
+	# Visual feedback for hits - create a ring pulse effect
+	var feedback_ring = Node2D.new()
+	add_child(feedback_ring)
+	feedback_ring.modulate = color
+	feedback_ring.modulate.a = 0.8
+	
+	# Draw the feedback ring
+	feedback_ring.set_script(load("res://scripts/game/hit_zone_visual.gd"))
+	feedback_ring.arc_radius = wheel_radius
+	feedback_ring.arc_width = 60.0
+	feedback_ring.arc_angle = 360.0
+	feedback_ring.arc_color = color
+	feedback_ring.pulse_speed = 0.0  # No pulse
+	
+	# Animate the ring expanding and fading
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(feedback_ring, "scale", Vector2(1.3, 1.3), 0.3)
+	tween.tween_property(feedback_ring, "modulate:a", 0.0, 0.3)
+	tween.finished.connect(func(): feedback_ring.queue_free())
 
 
 func clear_pattern():

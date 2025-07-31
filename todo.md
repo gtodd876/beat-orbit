@@ -4,11 +4,11 @@
 **Goal: Get the core game loop working**
 
 ### 1. Complete Scene Setup (30 min)
-- [ ] Create Game.tscn with proper node hierarchy
-- [ ] Create Arrow.tscn with basic triangle shape (Polygon2D)
-- [ ] Add DrumWheel node and attach script
-- [ ] Create hit zone visual (arc at top of wheel)
-- [ ] Test that arrows spawn and rotate correctly
+- [X] Create Game.tscn with proper node hierarchy
+- [X] Create Arrow.tscn with basic triangle shape (Polygon2D)
+- [X] Add DrumWheel node and attach script
+- [X] Create hit zone visual (arc at top of wheel)
+- [X] Test that arrows spawn and rotate correctly
 
 ### 2. Implement Audio System (45 min)
 - [ ] Create AudioSequencer.gd script

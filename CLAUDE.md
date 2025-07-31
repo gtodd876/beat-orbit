@@ -82,3 +82,55 @@ python -m http.server -d build/
 - Check audio latency on itch.io
 - Verify pattern recording/playback accuracy
 - Monitor memory usage during extended play
+
+## Code Style Guidelines (GDLint)
+
+### Class Structure Order
+Classes must follow this specific order:
+1. `tool` declarations
+2. `class_name` declarations
+3. `extends` statements
+4. Docstrings
+5. Signals
+6. Enums
+7. Constants
+8. Static variables
+9. Export variables
+10. Public variables
+11. Private variables (with `_` prefix)
+12. `@onready` public variables
+13. `@onready` private variables
+14. Other elements (methods, etc.)
+
+### Naming Conventions
+- **Classes**: PascalCase (e.g., `DrumWheel`, `GameManager`)
+- **Variables**: snake_case with optional `_` prefix for private (e.g., `hit_count`, `_internal_state`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_HEALTH`, `DEFAULT_BPM`)
+- **Functions**: snake_case or `_on_PascalCase` for signal callbacks (e.g., `calculate_score`, `_on_Button_pressed`)
+- **Signals**: snake_case (e.g., `drum_hit`, `pattern_completed`)
+- **Enums**: PascalCase (e.g., `DrumType`, `GameState`)
+- **Enum values**: UPPER_SNAKE_CASE (e.g., `KICK`, `SNARE`, `HI_HAT`)
+
+### Code Quality Limits
+- Maximum line length: 120 characters
+- Maximum file length: 1200 lines
+- Maximum function arguments: 10
+- Maximum public methods: 20
+- Maximum returns per function: 6
+
+### Additional Rules
+- Use single tab for indentation
+- No trailing whitespace
+- No mixed tabs and spaces
+- Avoid unnecessary `pass` statements
+- Don't use `elif`/`else` after `return`
+- Remove unused arguments
+
+### Running Linter
+```bash
+# Run gdlint on all GDScript files
+gdlint scripts/
+
+# Auto-format files
+gdformat scripts/
+```

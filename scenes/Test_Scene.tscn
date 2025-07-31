@@ -1,10 +1,31 @@
-[gd_scene load_steps=3 format=3 uid="uid://cn13cnctabsmd"]
+[gd_scene load_steps=3 format=3 uid="uid://cgqdydgf10w7f"]
 
-[ext_resource type="Script" uid="uid://bb2x6c1s6blia" path="res://scripts/test_scene.gd" id="1_kf7og"]
 [ext_resource type="AudioStream" uid="uid://b0igwxhh3vdua" path="res://assets/audio/drums/kick/kick1.wav" id="2_2td76"]
 
+[sub_resource type="GDScript" id="GDScript_kf7og"]
+script/source = "extends Node2D
+@onready var audio_stream_player_2d: AudioStreamPlayer2D = $AudioStreamPlayer2D
+
+
+func _ready():
+	print(\"Project setup complete!\")
+	print(\"Display size: \", get_viewport().size)
+	print(\"Audio latency: \", AudioServer.get_output_latency())
+
+	# Important for web games - wait for user interaction
+	if OS.has_feature(\"web\"):
+		print(\"Running in web browser\")
+
+
+func _input(event):
+	if event.is_action_pressed(\"hit_drum\"):
+		print(\"Drum hit!\")
+		# This will also trigger audio permission in browsers
+		audio_stream_player_2d.play()
+"
+
 [node name="Node2D" type="Node2D"]
-script = ExtResource("1_kf7og")
+script = SubResource("GDScript_kf7og")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 
