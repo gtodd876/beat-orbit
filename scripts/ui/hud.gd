@@ -6,7 +6,8 @@ var max_combo: int = 0
 
 @onready var beat_indicator = $HUD/BeatIndicator
 @onready var score_label = $HUD/ScoreLabel
-@onready var pattern_display = $HUD/PatternDisplay
+@onready var pattern_grid = $HUD/PatternGridContainer
+@onready var position_label = $HUD/PositionLabel
 @onready var controls_label = $HUD/ControlsLabel
 @onready var instructions_label = $HUD/InstructionsLabel
 
@@ -21,6 +22,8 @@ func _ready():
 
 	update_score_display()
 	update_instructions()
+	update_pattern_grid()
+	update_position_label(0)
 
 
 func _on_drum_hit(_drum_type, timing_quality, _beat_position):
@@ -40,8 +43,12 @@ func _on_drum_hit(_drum_type, timing_quality, _beat_position):
 	update_score_display()
 	show_hit_feedback(timing_quality)
 
+	# Update pattern grid when a hit is registered
+	if timing_quality != "MISS":
+		update_pattern_grid()
 
-func _on_beat_played(_position):
+
+func _on_beat_played(position):
 	# Pulse the beat indicator
 	if beat_indicator:
 		var tween = create_tween()
@@ -50,12 +57,16 @@ func _on_beat_played(_position):
 		tween.tween_property(beat_indicator, "modulate", Color(1, 1, 1, 1), 0.05)
 		tween.tween_property(beat_indicator, "modulate", Color(0.5, 0.5, 0.5, 1), 0.2)
 
+	# Update beat cursor position
+	update_beat_cursor(position)
+
+	# Update position label
+	update_position_label(position)
+
 
 func _on_pattern_complete():
-	# Update pattern display with the current pattern
-	var drum_wheel = get_node("/root/Game/DrumWheel")
-	if drum_wheel and pattern_display:
-		pattern_display.text = "Pattern: " + drum_wheel.get_pattern_as_string()
+	# Update pattern grid with the current pattern
+	update_pattern_grid()
 
 
 func update_score_display():
@@ -92,3 +103,26 @@ func update_instructions():
 		instructions_label.text = "Hit SPACE when arrows enter the cyan zone!"
 	if controls_label:
 		controls_label.text = "[SPACE] Hit Drum | [ESC] Pause | [R] Restart"
+
+
+func update_pattern_grid():
+	var drum_wheel = get_node("/root/Game/DrumWheel")
+	if not drum_wheel or not pattern_grid:
+		return
+
+	pattern_grid.update_pattern(drum_wheel.current_pattern)
+
+
+func update_beat_cursor(position):
+	if pattern_grid:
+		pattern_grid.update_cursor(position)
+
+
+func update_position_label(position):
+	if not position_label:
+		return
+
+	# Calculate bar and beat (1-indexed)
+	var bar = (position / 4) + 1
+	var beat = (position % 4) + 1
+	position_label.text = "Bar %d, Beat %d" % [bar, beat]

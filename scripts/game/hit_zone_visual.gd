@@ -66,14 +66,7 @@ func _draw():
 		true  # Antialiased
 	)
 
-	# Draw edge markers
-	var start_point_inner = Vector2(0, -(arc_radius - arc_width/2)).rotated(deg_to_rad(start_angle))
-	var start_point_outer = Vector2(0, -(arc_radius + arc_width/2)).rotated(deg_to_rad(start_angle))
-	var end_point_inner = Vector2(0, -(arc_radius - arc_width/2)).rotated(deg_to_rad(end_angle))
-	var end_point_outer = Vector2(0, -(arc_radius + arc_width/2)).rotated(deg_to_rad(end_angle))
-
-	draw_line(start_point_inner, start_point_outer, bright_color, 4.0, true)
-	draw_line(end_point_inner, end_point_outer, bright_color, 4.0, true)
+	# Edge markers removed - they were confusing
 
 	# Draw "HIT ZONE" text
 	var font = ThemeDB.fallback_font

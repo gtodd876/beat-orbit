@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/pattern_grid.gd" id="1_0"]
+
+[node name="PatternGrid" type="VBoxContainer"]
+custom_minimum_size = Vector2(300, 120)
+script = ExtResource("1_0")
+
+[node name="HeaderRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Spacer" type="Label" parent="HeaderRow"]
+custom_minimum_size = Vector2(30, 20)
+layout_mode = 2
+text = "   "
+
+[node name="GridContainer" type="GridContainer" parent="."]
+layout_mode = 2
+columns = 9

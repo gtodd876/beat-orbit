@@ -17,7 +17,7 @@ const MISS_WINDOW = 0.5
 @export var wheel_radius: float = 200.0
 @export var rotation_speed: float = 1.0  # radians per second
 @export var arrow_count: int = 8
-@export var hit_zone_angle: float = 0.0  # Top of wheel
+@export var hit_zone_angle: float = -PI/2  # Top of wheel (12 o'clock)
 
 # Audio settings
 @export var bpm: float = 120.0
