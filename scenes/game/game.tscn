@@ -1,13 +1,12 @@
-[gd_scene load_steps=9 format=3 uid="uid://bq5v4npmmltgx"]
+[gd_scene load_steps=8 format=3 uid="uid://bq5v4npmmltgx"]
 
 [ext_resource type="Script" uid="uid://cwlk84px0jcu7" path="res://scripts/game/drum_wheel.gd" id="1_sul5r"]
-[ext_resource type="Script" uid="uid://b67jgv8j4xtj8" path="res://scripts/game/hit_zone_visual.gd" id="2_7h61r"]
-[ext_resource type="PackedScene" uid="uid://cqxykiuk7i18o" path="res://scenes/game/arrow.tscn" id="2_kelw5"]
 [ext_resource type="Script" uid="uid://bwme5j4d5mudu" path="res://scripts/ui/hud.gd" id="3_0sr1o"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pattern_grid.tscn" id="4_pattern_grid"]
 [ext_resource type="AudioStream" uid="uid://do5ook2v5rkeu" path="res://assets/audio/drums/kick/kick2.wav" id="5_bdhmt"]
 [ext_resource type="AudioStream" uid="uid://c25vqpklfjxiq" path="res://assets/audio/drums/snare/snare.wav" id="6_87uf6"]
 [ext_resource type="AudioStream" uid="uid://jy14x4p0iqid" path="res://assets/audio/drums/hithat/hihat.wav" id="7_2a8rs"]
+[ext_resource type="AudioStream" uid="uid://m2k4875j3i8o" path="res://assets/audio/sfx/miss.wav" id="8_miss"]
 
 [node name="Game" type="Node2D"]
 
@@ -18,12 +17,6 @@
 [node name="DrumWheel" type="Node2D" parent="."]
 position = Vector2(576, 324)
 script = ExtResource("1_sul5r")
-arrow_scene = ExtResource("2_kelw5")
-
-[node name="HitZone" type="Node2D" parent="DrumWheel"]
-
-[node name="HitZoneVisual" type="Sprite2D" parent="DrumWheel/HitZone"]
-script = ExtResource("2_7h61r")
 
 [node name="UI" type="CanvasLayer" parent="."]
 script = ExtResource("3_0sr1o")
@@ -94,10 +87,10 @@ offset_bottom = 131.0
 grow_horizontal = 0
 theme_override_font_sizes/normal_font_size = 16
 bbcode_enabled = true
-text = "[b]Arrow Colors:[/b]
-[color=#ff5555]Red[/color] = Kick
-[color=#55ff55]Green[/color] = Snare  
-[color=#aaaaff]Blue[/color] = Hi-hat"
+text = "[b]Current Layer:[/b]
+[color=#ff5555]Red[/color] = Kick (beats 1 & 5)
+[color=#55ff55]Green[/color] = Snare (beats 3 & 7)
+[color=#aaaaff]Blue[/color] = Hi-hat (beats 2, 4, 6, 8)"
 
 [node name="InstructionsLabel" type="Label" parent="UI/HUD"]
 layout_mode = 0
@@ -110,7 +103,7 @@ offset_top = -120.0
 offset_right = 300.0
 offset_bottom = -80.0
 theme_override_font_sizes/font_size = 24
-text = "Hit SPACE when arrows enter the cyan zone!"
+text = "Hit SPACE when the arrow points to the beat circles!"
 horizontal_alignment = 1
 
 [node name="ControlsLabel" type="Label" parent="UI/HUD"]
@@ -137,3 +130,7 @@ stream = ExtResource("6_87uf6")
 
 [node name="HiHatPlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
 stream = ExtResource("7_2a8rs")
+
+[node name="MissPlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
+stream = ExtResource("8_miss")
+volume_db = -6.0

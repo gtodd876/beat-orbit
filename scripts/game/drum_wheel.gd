@@ -1,182 +1,361 @@
 class_name DrumWheel
 extends Node2D
+
 # Signals
-signal drum_hit(drum_type: DrumType, timing_quality: String, beat_position: int)
+signal drum_hit(drum_type: DrumType, timing_quality: String, beat_number: int)
 signal pattern_complete
-signal beat_played(position: int)
+signal beat_played(beat_number: int)
+signal layer_complete(drum_type: DrumType)
+signal level_started
 
 # Drum types
 enum DrumType { KICK, SNARE, HIHAT }
 
-# Timing windows (in radians)
-const PERFECT_WINDOW = 0.15
-const GOOD_WINDOW = 0.3
-const MISS_WINDOW = 0.5
+# Timing windows (in seconds)
+const PERFECT_WINDOW = 0.05
+const GOOD_WINDOW = 0.1
+const MISS_WINDOW = 0.15
 
 # Visual settings
 @export var wheel_radius: float = 200.0
-@export var rotation_speed: float = 1.0  # radians per second
-@export var arrow_count: int = 8
-@export var hit_zone_angle: float = -PI/2  # Top of wheel (12 o'clock)
+@export var beat_circle_radius: float = 30.0
 
 # Audio settings
 @export var bpm: float = 120.0
-@export var measures: int = 2
-@export var beats_per_measure: int = 4
 
-# Arrow scene (to be created)
-@export var arrow_scene: PackedScene
-
-# Hit feedback colors
-var perfect_color = Color(0, 1, 1)  # Cyan
-var good_color = Color(1, 1, 0)  # Yellow
-var miss_color = Color(1, 0, 0)  # Red
+# Pattern data - predetermined patterns for each drum type
+var kick_pattern = [true, false, false, false, true, false, false, false]  # Beats 1 & 5
+var snare_pattern = [false, false, true, false, false, false, true, false]  # Beats 3 & 7
+var hihat_pattern = [false, true, false, true, false, true, false, true]  # Beats 2, 4, 6, 8
 
 # Game state
-var arrows: Array = []
-var current_pattern: Array = []  # Stores the recorded drum pattern
-var pattern_position: int = 0
+var current_layer: DrumType = DrumType.KICK
+var completed_layers: Dictionary = {
+	DrumType.KICK: false,
+	DrumType.SNARE: false,
+	DrumType.HIHAT: false
+}
+var player_pattern: Dictionary = {
+	DrumType.KICK: [false, false, false, false, false, false, false, false],
+	DrumType.SNARE: [false, false, false, false, false, false, false, false],
+	DrumType.HIHAT: [false, false, false, false, false, false, false, false]
+}
+var is_pattern_complete: bool = false
+
+# Rotation state
+var arrow_rotation: float = 0.0
+var rotation_speed: float = 0.0
 var beat_timer: float = 0.0
+var current_beat: int = 0
 var is_playing: bool = false
+
+# Wild animation state
+var is_animating: bool = false
+var animation_timer: float = 0.0
+var animation_duration: float = 0.0
+var animation_type: String = ""
+var base_rotation_speed: float = 0.0
+var target_rotation: float = 0.0
+
+# Visual elements
+var beat_circles: Array = []
+var rotating_arrow: Node2D
+
+# Colors
+var kick_color = Color(1, 0.2, 0.2)  # Red
+var snare_color = Color(0.2, 1, 0.2)  # Green
+var hihat_color = Color(0.2, 0.2, 1)  # Blue
+var inactive_color = Color(0.3, 0.3, 0.3)  # Gray
 
 
 func _ready():
-	# Calculate beat duration
+	# Calculate rotation speed based on BPM
 	var beat_duration = 60.0 / bpm
-	var total_beats = measures * beats_per_measure
+	base_rotation_speed = TAU / (beat_duration * 8)  # 8 beats per rotation
+	rotation_speed = base_rotation_speed
 
-	# Calculate rotation speed to sync with BPM
-	# One full rotation should take the same time as the full pattern
-	var pattern_duration = beat_duration * total_beats
-	rotation_speed = TAU / pattern_duration
+	# Create beat circles
+	create_beat_circles()
 
-	# Initialize pattern array
-	current_pattern.resize(total_beats)
-	for i in total_beats:
-		current_pattern[i] = []
+	# Create rotating arrow
+	create_rotating_arrow()
 
-	# Create arrows
-	spawn_arrows()
-
-	# Start the wheel spinning
+	# Start playing
 	is_playing = true
+	update_beat_visuals()
 
 
-func spawn_arrows():
-	if not arrow_scene:
-		push_error("Arrow scene not set!")
-		return
+func create_beat_circles():
+	for i in range(8):
+		var angle = (i * TAU / 8) - PI / 2  # Start at top (12 o'clock)
+		var circle = Node2D.new()
+		circle.position = Vector2(wheel_radius, 0).rotated(angle)
+		circle.set_meta("beat_number", i)
+		circle.set_script(load("res://scripts/game/beat_circle.gd"))
+		add_child(circle)
+		beat_circles.append(circle)
 
-	var angle_step = TAU / arrow_count
 
-	for i in arrow_count:
-		var arrow = arrow_scene.instantiate()
-		var angle = i * angle_step
-		var drum_type = i % 3  # Cycle through KICK, SNARE, HIHAT
-
-		arrow.position = Vector2(wheel_radius, 0).rotated(angle)
-		arrow.rotation = angle + PI / 2  # Point outward
-		arrow.drum_type = drum_type
-		arrow.set_meta("angle", angle)
-
-		add_child(arrow)
-		arrows.append(arrow)
+func create_rotating_arrow():
+	rotating_arrow = Node2D.new()
+	rotating_arrow.set_script(load("res://scripts/game/rotating_arrow.gd"))
+	add_child(rotating_arrow)
 
 
 func _process(delta):
 	if not is_playing:
 		return
 
-	# Rotate all arrows
-	for arrow in arrows:
-		var current_angle = arrow.get_meta("angle")
-		current_angle += rotation_speed * delta
+	# Handle wild animations
+	if is_animating:
+		handle_animation(delta)
+	else:
+		# Normal rotation
+		arrow_rotation += rotation_speed * delta
 
 		# Wrap around
-		if current_angle > TAU:
-			current_angle -= TAU
+		if arrow_rotation >= TAU:
+			arrow_rotation -= TAU
+		elif arrow_rotation < 0:
+			arrow_rotation += TAU
 
-		arrow.set_meta("angle", current_angle)
-		arrow.position = Vector2(wheel_radius, 0).rotated(current_angle)
-		arrow.rotation = current_angle + PI / 2
+	# Update arrow visual
+	if rotating_arrow:
+		rotating_arrow.rotation = arrow_rotation
 
 	# Update beat timer
 	beat_timer += delta
-	var beat_duration = 60.0 / bpm
+	# Beat duration would be 60.0 / bpm, but not needed here
 
-	if beat_timer >= beat_duration:
-		beat_timer -= beat_duration
-		play_current_beat()
-		pattern_position = (pattern_position + 1) % current_pattern.size()
-
-		if pattern_position == 0:
-			emit_signal("pattern_complete")
+	# Check if we've hit a new beat
+	var new_beat = int((arrow_rotation + PI/2) / (TAU / 8)) % 8
+	if new_beat != current_beat:
+		current_beat = new_beat
+		emit_signal("beat_played", current_beat)
+		play_pattern_sounds()
 
 
 func _input(event):
 	if event.is_action_pressed("hit_drum"):
-		check_hit()
+		if is_pattern_complete:
+			# When pattern is complete, SPACE advances to next level
+			start_next_level()
+		elif not is_animating:
+			check_hit()
 
 
 func check_hit():
-	var closest_arrow = null
-	var closest_distance = INF
+	# Calculate which beat the arrow is closest to
+	var normalized_angle = wrapf(arrow_rotation + PI/2, 0, TAU)
+	var beat_angle = TAU / 8
+	var closest_beat = int(round(normalized_angle / beat_angle)) % 8
 
-	# Find the arrow closest to the hit zone
-	for arrow in arrows:
-		var angle = arrow.get_meta("angle")
-		var distance = abs(angle_difference(angle, hit_zone_angle))
+	# Calculate timing accuracy
+	var beat_target_angle = (closest_beat * beat_angle) - PI/2
+	var angle_distance = abs(angle_diff(arrow_rotation, beat_target_angle))
+	var time_difference = angle_distance / base_rotation_speed
 
-		if distance < closest_distance:
-			closest_distance = distance
-			closest_arrow = arrow
-
-	if not closest_arrow:
-		return
-
-	# Determine timing quality
 	var timing_quality = ""
-	if closest_distance <= PERFECT_WINDOW:
+	var success = false
+
+	if time_difference <= PERFECT_WINDOW:
 		timing_quality = "PERFECT"
-		show_hit_feedback(perfect_color)
-		add_to_pattern(closest_arrow.drum_type)
-	elif closest_distance <= GOOD_WINDOW:
+		success = true
+	elif time_difference <= GOOD_WINDOW:
 		timing_quality = "GOOD"
-		show_hit_feedback(good_color)
-		add_to_pattern(closest_arrow.drum_type)
+		success = true
 	else:
 		timing_quality = "MISS"
-		show_hit_feedback(miss_color)
+		success = false
 
-	emit_signal("drum_hit", closest_arrow.drum_type, timing_quality, pattern_position)
+	# Check if this beat should be hit for current layer
+	var correct_beat = false
+	match current_layer:
+		DrumType.KICK:
+			correct_beat = kick_pattern[closest_beat]
+		DrumType.SNARE:
+			correct_beat = snare_pattern[closest_beat]
+		DrumType.HIHAT:
+			correct_beat = hihat_pattern[closest_beat]
+
+	if success and correct_beat:
+		# Record successful hit
+		player_pattern[current_layer][closest_beat] = true
+
+		# Visual feedback on beat circle
+		if closest_beat < beat_circles.size():
+			beat_circles[closest_beat].show_hit_feedback(get_layer_color(), timing_quality)
+
+		# Start wild animation
+		start_wild_animation(current_layer)
+
+		# Check if layer is complete
+		if is_layer_complete(current_layer):
+			complete_current_layer()
+
+		# Play drum sound
+		play_drum_sound(current_layer)
+	else:
+		# Show miss feedback
+		if closest_beat < beat_circles.size():
+			beat_circles[closest_beat].show_hit_feedback(Color.RED, "MISS")
+
+		# Play miss sound
+		play_miss_sound()
+
+	emit_signal("drum_hit", current_layer, timing_quality, closest_beat)
 
 
-func angle_difference(angle1: float, angle2: float) -> float:
-	var diff = angle1 - angle2
-
-	# Normalize to [-PI, PI]
+func angle_diff(a1: float, a2: float) -> float:
+	var diff = a1 - a2
 	while diff > PI:
 		diff -= TAU
 	while diff < -PI:
 		diff += TAU
-
 	return diff
 
 
-func add_to_pattern(drum_type: DrumType):
-	# Add this drum hit to the current beat in the pattern
-	if not drum_type in current_pattern[pattern_position]:
-		current_pattern[pattern_position].append(drum_type)
+func start_wild_animation(drum_type: DrumType):
+	is_animating = true
+	animation_timer = 0.0
+
+	match drum_type:
+		DrumType.KICK:
+			# 1-2 fast full rotations
+			animation_type = "kick"
+			animation_duration = 0.5
+			var spins = randi_range(1, 2)
+			var direction = 1 if randf() > 0.5 else -1
+			target_rotation = arrow_rotation + (TAU * spins * direction)
+
+		DrumType.SNARE:
+			# Multiple random half turns
+			animation_type = "snare"
+			animation_duration = 0.4
+			var half_turns = randi_range(2, 4)
+			var direction = 1 if randf() > 0.5 else -1
+			target_rotation = arrow_rotation + (PI * half_turns * direction)
+
+		DrumType.HIHAT:
+			# Random direction change
+			animation_type = "hihat"
+			animation_duration = 0.2
+			rotation_speed *= -1  # Just reverse direction
 
 
-func play_current_beat():
-	# Play all drums scheduled for this beat
-	var drums_to_play = current_pattern[pattern_position]
+func handle_animation(delta: float):
+	animation_timer += delta
 
-	for drum_type in drums_to_play:
-		play_drum_sound(drum_type)
+	if animation_type == "hihat":
+		# Hi-hat just reverses direction, no special animation
+		arrow_rotation += rotation_speed * delta
+		if animation_timer >= animation_duration:
+			is_animating = false
+			animation_type = ""
+	else:
+		# Kick and snare animations
+		var progress = animation_timer / animation_duration
 
-	emit_signal("beat_played", pattern_position)
+		if progress >= 1.0:
+			# Animation complete, resync to beat
+			is_animating = false
+			animation_type = ""
+			resync_to_beat()
+		else:
+			# Ease-out animation
+			var eased_progress = 1.0 - pow(1.0 - progress, 3)
+			var start_rotation = arrow_rotation
+			arrow_rotation = lerp(start_rotation, target_rotation, eased_progress * delta * 10)
+
+
+func resync_to_beat():
+	# Find the nearest beat position and smoothly align to it
+	var beat_angle = TAU / 8
+	var normalized_angle = wrapf(arrow_rotation + PI/2, 0, TAU)
+	var nearest_beat = round(normalized_angle / beat_angle)
+	var target_angle = (nearest_beat * beat_angle) - PI/2
+
+	arrow_rotation = target_angle
+
+
+func is_layer_complete(layer: DrumType) -> bool:
+	var pattern = get_pattern_for_layer(layer)
+	for i in range(8):
+		if pattern[i] and not player_pattern[layer][i]:
+			return false
+	return true
+
+
+func get_pattern_for_layer(layer: DrumType) -> Array:
+	match layer:
+		DrumType.KICK:
+			return kick_pattern
+		DrumType.SNARE:
+			return snare_pattern
+		DrumType.HIHAT:
+			return hihat_pattern
+	return []
+
+
+func complete_current_layer():
+	completed_layers[current_layer] = true
+	emit_signal("layer_complete", current_layer)
+
+	# Move to next layer
+	if current_layer == DrumType.KICK:
+		current_layer = DrumType.SNARE
+		update_beat_visuals()
+	elif current_layer == DrumType.SNARE:
+		current_layer = DrumType.HIHAT
+		update_beat_visuals()
+	elif current_layer == DrumType.HIHAT:
+		# All layers complete!
+		is_pattern_complete = true
+		emit_signal("pattern_complete")
+		# Hide all beat circles since pattern is complete
+		for circle in beat_circles:
+			circle.set_target_beat(false, inactive_color)
+
+
+func update_beat_visuals():
+	var pattern = get_pattern_for_layer(current_layer)
+	var color = get_layer_color()
+
+	for i in range(beat_circles.size()):
+		if pattern[i]:
+			beat_circles[i].set_target_beat(true, color)
+		else:
+			beat_circles[i].set_target_beat(false, inactive_color)
+
+		# Show completed beats from previous layers
+		for layer in completed_layers:
+			if completed_layers[layer]:
+				var layer_pattern = get_pattern_for_layer(layer)
+				if layer_pattern[i] and player_pattern[layer][i]:
+					beat_circles[i].add_completed_layer(layer, get_color_for_layer(layer))
+
+
+func get_layer_color() -> Color:
+	return get_color_for_layer(current_layer)
+
+
+func get_color_for_layer(layer: DrumType) -> Color:
+	match layer:
+		DrumType.KICK:
+			return kick_color
+		DrumType.SNARE:
+			return snare_color
+		DrumType.HIHAT:
+			return hihat_color
+	return Color.WHITE
+
+
+func play_pattern_sounds():
+	# Play all sounds that have been successfully placed (not just completed layers)
+	for layer in player_pattern:
+		var pattern = get_pattern_for_layer(layer)
+		if pattern[current_beat] and player_pattern[layer][current_beat]:
+			play_drum_sound(layer)
 
 
 func play_drum_sound(drum_type: DrumType):
@@ -200,48 +379,37 @@ func play_drum_sound(drum_type: DrumType):
 				hihat_player.play()
 
 
-func show_hit_feedback(color: Color):
-	# Visual feedback for hits - create a ring pulse effect
-	var feedback_ring = Node2D.new()
-	add_child(feedback_ring)
-	feedback_ring.modulate = color
-	feedback_ring.modulate.a = 0.8
+func play_miss_sound():
+	# Play miss sound effect
+	var audio_players = get_node("/root/Game/AudioPlayers")
+	if not audio_players:
+		return
+
+	var miss_player = audio_players.get_node("MissPlayer")
+	if miss_player and miss_player.stream:
+		miss_player.play()
+
+
+func reset_game():
+	# Reset all patterns and state
+	for layer in player_pattern:
+		for i in range(8):
+			player_pattern[layer][i] = false
+
+	for layer in completed_layers:
+		completed_layers[layer] = false
+
+	current_layer = DrumType.KICK
+	arrow_rotation = -PI/2  # Start at top
+	is_animating = false
+	is_pattern_complete = false
+	update_beat_visuals()
+
+
+func start_next_level():
+	# For now, just reset the game
+	# In the future, this could load a new pattern or increase difficulty
+	reset_game()
 	
-	# Draw the feedback ring
-	feedback_ring.set_script(load("res://scripts/game/hit_zone_visual.gd"))
-	feedback_ring.arc_radius = wheel_radius
-	feedback_ring.arc_width = 60.0
-	feedback_ring.arc_angle = 360.0
-	feedback_ring.arc_color = color
-	feedback_ring.pulse_speed = 0.0  # No pulse
-	
-	# Animate the ring expanding and fading
-	var tween = create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(feedback_ring, "scale", Vector2(1.3, 1.3), 0.3)
-	tween.tween_property(feedback_ring, "modulate:a", 0.0, 0.3)
-	tween.finished.connect(func(): feedback_ring.queue_free())
-
-
-func clear_pattern():
-	for i in current_pattern.size():
-		current_pattern[i].clear()
-
-
-func get_pattern_as_string() -> String:
-	# Useful for debugging and saving patterns
-	var pattern_str = ""
-	for beat in current_pattern:
-		if beat.is_empty():
-			pattern_str += "."
-		else:
-			for drum in beat:
-				match drum:
-					DrumType.KICK:
-						pattern_str += "K"
-					DrumType.SNARE:
-						pattern_str += "S"
-					DrumType.HIHAT:
-						pattern_str += "H"
-		pattern_str += " "
-	return pattern_str
+	# Let HUD know level has started
+	emit_signal("level_started")

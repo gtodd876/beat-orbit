@@ -1,9 +1,5 @@
 extends VBoxContainer
 
-# Grid references
-@onready var header_row = $HeaderRow
-@onready var grid_container = $GridContainer
-
 # Visual settings
 @export var empty_text: String = "_"
 @export var hit_text: String = "X"
@@ -19,6 +15,11 @@ extends VBoxContainer
 var cursor_position: int = 0
 var cursor_labels: Array = []
 
+# Grid references
+@onready var header_row = $HeaderRow
+@onready var grid_container = $GridContainer
+
+
 func _ready():
 	setup_grid()
 
@@ -28,10 +29,10 @@ func setup_grid():
 	for child in header_row.get_children():
 		if child.name != "Spacer":
 			child.queue_free()
-	
+
 	for child in grid_container.get_children():
 		child.queue_free()
-	
+
 	# Create header numbers
 	for i in range(8):
 		var num_label = Label.new()
@@ -40,12 +41,12 @@ func setup_grid():
 		num_label.add_theme_font_size_override("font_size", 16)
 		num_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		header_row.add_child(num_label)
-	
+
 	# Create grid cells
 	# Row labels
 	var drums = ["K:", "S:", "H:"]
 	var drum_colors = [kick_color, snare_color, hihat_color]
-	
+
 	for row in range(3):
 		# Add row label
 		var row_label = Label.new()
@@ -54,7 +55,7 @@ func setup_grid():
 		row_label.modulate = drum_colors[row]
 		row_label.add_theme_font_size_override("font_size", 16)
 		grid_container.add_child(row_label)
-		
+
 		# Add cells for each beat
 		for col in range(8):
 			var cell = Label.new()
@@ -66,12 +67,12 @@ func setup_grid():
 			cell.add_theme_font_size_override("font_size", 16)
 			cell.name = "Cell_%d_%d" % [row, col]
 			grid_container.add_child(cell)
-	
+
 	# Create cursor row
 	var cursor_spacer = Label.new()
 	cursor_spacer.custom_minimum_size = Vector2(30, 20)
 	grid_container.add_child(cursor_spacer)
-	
+
 	cursor_labels.clear()
 	for col in range(8):
 		var cursor_label = Label.new()
@@ -89,7 +90,7 @@ func update_pattern(pattern: Array):
 		var has_kick = false
 		var has_snare = false
 		var has_hihat = false
-		
+
 		for drum_type in pattern[beat_idx]:
 			match drum_type:
 				0:  # KICK
@@ -98,19 +99,19 @@ func update_pattern(pattern: Array):
 					has_snare = true
 				2:  # HIHAT
 					has_hihat = true
-		
+
 		# Update kick cell
 		var kick_cell = grid_container.get_node_or_null("Cell_0_%d" % beat_idx)
 		if kick_cell:
 			kick_cell.text = hit_text if has_kick else empty_text
 			kick_cell.modulate = kick_color if has_kick else empty_color
-		
+
 		# Update snare cell
 		var snare_cell = grid_container.get_node_or_null("Cell_1_%d" % beat_idx)
 		if snare_cell:
 			snare_cell.text = hit_text if has_snare else empty_text
 			snare_cell.modulate = snare_color if has_snare else empty_color
-		
+
 		# Update hihat cell
 		var hihat_cell = grid_container.get_node_or_null("Cell_2_%d" % beat_idx)
 		if hihat_cell:
@@ -118,13 +119,13 @@ func update_pattern(pattern: Array):
 			hihat_cell.modulate = hihat_color if has_hihat else empty_color
 
 
-func update_cursor(position: int):
-	cursor_position = position
-	
+func update_cursor(beat_position: int):
+	cursor_position = beat_position
+
 	# Clear all cursor labels
 	for i in range(cursor_labels.size()):
 		cursor_labels[i].text = ""
-	
+
 	# Set cursor at current position
-	if position >= 0 and position < cursor_labels.size():
-		cursor_labels[position].text = "*"
+	if beat_position >= 0 and beat_position < cursor_labels.size():
+		cursor_labels[beat_position].text = "*"

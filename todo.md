@@ -11,23 +11,23 @@
 - [X] Test that arrows spawn and rotate correctly
 
 ### 2. Implement Audio System (45 min)
-- [ ] Create AudioSequencer.gd script
-- [ ] Add AudioStreamPlayer nodes for each drum type
-- [ ] Load placeholder/temp drum sounds (can use Godot's built-in sine wave generator)
-- [ ] Connect drum_hit signal to audio playback
-- [ ] Test that sounds play on successful hits
+- [X] Create AudioSequencer.gd script
+- [X] Add AudioStreamPlayer nodes for each drum type
+- [X] Load placeholder/temp drum sounds (can use Godot's built-in sine wave generator)
+- [X] Connect drum_hit signal to audio playback
+- [X] Test that sounds play on successful hits
 
 ### 3. Get Basic Gameplay Working (45 min)
-- [ ] Implement proper hit detection with timing windows
-- [ ] Add visual feedback for Perfect/Good/Miss
-- [ ] Display current pattern as text (for debugging)
-- [ ] Ensure pattern loops correctly
-- [ ] Add beat indicator (visual pulse or text)
+- [X] Implement proper hit detection with timing windows
+- [X] Add visual feedback for Perfect/Good/Miss
+- [X] Display current pattern as text (for debugging)
+- [X] Ensure pattern loops correctly
+- [X] Add beat indicator (visual pulse or text)
 
 ### 4. Quick Testing & Debugging (30 min)
 - [ ] Verify BPM sync is working correctly
 - [ ] Check that patterns record and loop properly
-- [ ] Test all input methods (keyboard, mouse)
+- [X] Test all input methods (keyboard, mouse)
 - [ ] Fix any critical bugs
 
 ---
@@ -36,13 +36,13 @@
 **Goal: Add real audio and basic progression**
 
 ### 1. Audio Production (45 min)
-- [ ] Export drum samples from Native Instruments:
-  - [ ] Kick: 3 velocity layers (soft, medium, hard)
-  - [ ] Snare: 3 velocity layers
-  - [ ] Hi-hat: 3 velocity layers (closed)
-  - [ ] Optional: Crash cymbal for level complete
-- [ ] Normalize all samples, export as 16-bit WAV
-- [ ] Import into Godot with correct settings
+- [X] Export drum samples from Native Instruments:
+  - [X] Kick: 3 velocity layers (soft, medium, hard)
+  - [X] Snare: 3 velocity layers
+  - [X] Hi-hat: 3 velocity layers (closed)
+  - [X] Optional: Crash cymbal for level complete
+- [X] Normalize all samples, export as 16-bit WAV
+- [X] Import into Godot with correct settings
 
 ### 2. Create Level System (45 min)
 - [ ] Create Level class or resource

@@ -19,6 +19,8 @@ func _ready():
 		drum_wheel.drum_hit.connect(_on_drum_hit)
 		drum_wheel.beat_played.connect(_on_beat_played)
 		drum_wheel.pattern_complete.connect(_on_pattern_complete)
+		drum_wheel.layer_complete.connect(_on_layer_complete)
+		drum_wheel.level_started.connect(_on_level_started)
 
 	update_score_display()
 	update_instructions()
@@ -68,6 +70,27 @@ func _on_pattern_complete():
 	# Update pattern grid with the current pattern
 	update_pattern_grid()
 
+	# Show completion message
+	show_completion_message("PATTERN COMPLETE!")
+
+	# Update instructions
+	if instructions_label:
+		instructions_label.text = "Press SPACE for next level!"
+
+
+func _on_layer_complete(drum_type):
+	# Show layer completion
+	var layer_name = ""
+	match drum_type:
+		0:  # KICK
+			layer_name = "KICK LAYER"
+		1:  # SNARE
+			layer_name = "SNARE LAYER"
+		2:  # HIHAT
+			layer_name = "HI-HAT LAYER"
+
+	show_completion_message(layer_name + " COMPLETE!")
+
 
 func update_score_display():
 	if score_label:
@@ -100,7 +123,7 @@ func show_hit_feedback(timing_quality):
 
 func update_instructions():
 	if instructions_label:
-		instructions_label.text = "Hit SPACE when arrows enter the cyan zone!"
+		instructions_label.text = "Hit SPACE when the arrow points to the beat circles!"
 	if controls_label:
 		controls_label.text = "[SPACE] Hit Drum | [ESC] Pause | [R] Restart"
 
@@ -110,19 +133,75 @@ func update_pattern_grid():
 	if not drum_wheel or not pattern_grid:
 		return
 
-	pattern_grid.update_pattern(drum_wheel.current_pattern)
+	# Create pattern array in the format expected by pattern grid
+	var display_pattern = []
+	for i in range(8):
+		display_pattern.append([])
+
+	# Add completed beats to the pattern
+	for drum_layer in drum_wheel.completed_layers:
+		if drum_wheel.completed_layers[drum_layer]:
+			var player_pattern = drum_wheel.player_pattern[drum_layer]
+			for beat_idx in range(8):
+				if player_pattern[beat_idx]:
+					display_pattern[beat_idx].append(drum_layer)
+
+	# Also add current layer's successful hits
+	var current_player_pattern = drum_wheel.player_pattern[drum_wheel.current_layer]
+	for beat_idx in range(8):
+		if current_player_pattern[beat_idx]:
+			if not drum_wheel.current_layer in display_pattern[beat_idx]:
+				display_pattern[beat_idx].append(drum_wheel.current_layer)
+
+	pattern_grid.update_pattern(display_pattern)
 
 
-func update_beat_cursor(position):
+func update_beat_cursor(beat_position):
 	if pattern_grid:
-		pattern_grid.update_cursor(position)
+		pattern_grid.update_cursor(beat_position)
 
 
 func update_position_label(position):
 	if not position_label:
 		return
 
-	# Calculate bar and beat (1-indexed)
-	var bar = (position / 4) + 1
-	var beat = (position % 4) + 1
-	position_label.text = "Bar %d, Beat %d" % [bar, beat]
+	# Show beat 1-8
+	position_label.text = "Beat %d" % [position + 1]
+
+
+func show_completion_message(message: String):
+	# Create a big centered message with background
+	var container = Control.new()
+	container.set_anchors_preset(Control.PRESET_CENTER)
+	container.size = Vector2(600, 120)
+	container.position = Vector2(-300, -60)
+
+	# Add background panel
+	var bg = ColorRect.new()
+	bg.color = Color(0, 0, 0, 0.8)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.add_child(bg)
+
+	# Add text
+	var completion_label = Label.new()
+	completion_label.text = message
+	completion_label.add_theme_font_size_override("font_size", 48)
+	completion_label.modulate = Color(0, 1, 1)  # Cyan
+	completion_label.set_anchors_preset(Control.PRESET_CENTER)
+	completion_label.position = Vector2(-250, -30)
+	container.add_child(completion_label)
+
+	$HUD.add_child(container)
+
+	# Animate
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(container, "scale", Vector2(1.2, 1.2), 0.3)
+	tween.tween_property(container, "modulate:a", 0, 2.5).set_delay(1.0)
+	tween.finished.connect(func(): container.queue_free())
+
+
+func _on_level_started():
+	# Reset instructions for new level
+	update_instructions()
+	update_pattern_grid()
