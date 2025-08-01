@@ -1,22 +1,85 @@
-[gd_scene load_steps=8 format=3 uid="uid://bq5v4npmmltgx"]
+[gd_scene load_steps=18 format=3 uid="uid://bq5v4npmmltgx"]
 
 [ext_resource type="Script" uid="uid://cwlk84px0jcu7" path="res://scripts/game/drum_wheel.gd" id="1_sul5r"]
+[ext_resource type="Texture2D" uid="uid://c6ei7fh6qh2kr" path="res://assets/art/sprites/drum-wheel-2x.png" id="2_2a8rs"]
 [ext_resource type="Script" uid="uid://bwme5j4d5mudu" path="res://scripts/ui/hud.gd" id="3_0sr1o"]
-[ext_resource type="PackedScene" path="res://scenes/ui/pattern_grid.tscn" id="4_pattern_grid"]
+[ext_resource type="FontFile" uid="uid://du3smcf51mvpm" path="res://assets/fonts/Audiowide-Regular.ttf" id="3_87uf6"]
+[ext_resource type="Texture2D" uid="uid://c6h8s3np4mq8a" path="res://assets/art/sprites/hit-target-flag-2x.png" id="3_kp23o"]
+[ext_resource type="Texture2D" uid="uid://lymtf0ma0f8u" path="res://assets/art/sprites/arrow-2x.png" id="4_5jirj"]
 [ext_resource type="AudioStream" uid="uid://do5ook2v5rkeu" path="res://assets/audio/drums/kick/kick2.wav" id="5_bdhmt"]
+[ext_resource type="Texture2D" uid="uid://b6qqw4empcl4p" path="res://assets/art/sprites/pattern-grid-mk2-x2.png" id="5_ftsea"]
 [ext_resource type="AudioStream" uid="uid://c25vqpklfjxiq" path="res://assets/audio/drums/snare/snare.wav" id="6_87uf6"]
+[ext_resource type="Texture2D" uid="uid://dlexkmv5l8104" path="res://assets/art/sprites/grid-beat-marker-2x.png" id="6_ftsea"]
 [ext_resource type="AudioStream" uid="uid://jy14x4p0iqid" path="res://assets/audio/drums/hithat/hihat.wav" id="7_2a8rs"]
+[ext_resource type="Texture2D" uid="uid://decq6iumx5eu7" path="res://assets/art/sprites/drum-hit-on-grid-2x.png" id="7_otnwt"]
 [ext_resource type="AudioStream" uid="uid://m2k4875j3i8o" path="res://assets/audio/sfx/miss.wav" id="8_miss"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_2a8rs"]
+font = ExtResource("3_87uf6")
+font_size = 48
+
+[sub_resource type="LabelSettings" id="LabelSettings_87uf6"]
+font = ExtResource("3_87uf6")
+font_size = 48
+
+[sub_resource type="LabelSettings" id="LabelSettings_kp23o"]
+font = ExtResource("3_87uf6")
+font_size = 45
+
+[sub_resource type="LabelSettings" id="LabelSettings_4j704"]
+font = ExtResource("3_87uf6")
+font_size = 26
 
 [node name="Game" type="Node2D"]
 
-[node name="Background" type="Node2D" parent="."]
+[node name="Background" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
 
-[node name="Grid" type="Sprite2D" parent="Background"]
+[node name="ColorRect" type="ColorRect" parent="Background"]
+custom_minimum_size = Vector2(1280, 720)
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.0769946, 0.0769946, 0.0769946, 1)
 
 [node name="DrumWheel" type="Node2D" parent="."]
 position = Vector2(576, 324)
 script = ExtResource("1_sul5r")
+
+[node name="Sprite2D" type="Sprite2D" parent="DrumWheel"]
+position = Vector2(-267, 10)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_2a8rs")
+
+[node name="HitTargetContainer" type="Node2D" parent="DrumWheel"]
+
+[node name="HitTarget" type="Sprite2D" parent="DrumWheel/HitTargetContainer"]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("3_kp23o")
+
+[node name="Arrow" type="Sprite2D" parent="DrumWheel"]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("4_5jirj")
+
+[node name="PatternGrid" type="Node2D" parent="."]
+
+[node name="Sprite2D" type="Sprite2D" parent="PatternGrid"]
+position = Vector2(917, 342)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("5_ftsea")
+
+[node name="GridContainer" type="GridContainer" parent="PatternGrid"]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="BeatMarker" type="Sprite2D" parent="PatternGrid"]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("6_ftsea")
+
+[node name="ActiveCell" type="Sprite2D" parent="PatternGrid"]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("7_otnwt")
 
 [node name="UI" type="CanvasLayer" parent="."]
 script = ExtResource("3_0sr1o")
@@ -29,27 +92,52 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="BeatIndicator" type="Label" parent="UI/HUD"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = 200.0
-offset_bottom = 60.0
-theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
-theme_override_font_sizes/font_size = 32
-text = "BEAT"
+[node name="MarginContainer2" type="MarginContainer" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 102.0
+grow_horizontal = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
 
-[node name="ScoreLabel" type="Label" parent="UI/HUD"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 80.0
-offset_right = 300.0
-offset_bottom = 160.0
-theme_override_font_sizes/font_size = 20
-text = "Score: 0
-Combo: 0"
+[node name="HBoxContainer2" type="HBoxContainer" parent="UI/HUD/MarginContainer2"]
+layout_mode = 2
 
-[node name="PatternGridContainer" parent="UI/HUD" instance=ExtResource("4_pattern_grid")]
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/HUD/MarginContainer2/HBoxContainer2"]
+custom_minimum_size = Vector2(580, 0)
+layout_mode = 2
+alignment = 1
+
+[node name="Score" type="Label" parent="UI/HUD/MarginContainer2/HBoxContainer2/VBoxContainer"]
+layout_mode = 2
+text = "Score: 000"
+label_settings = SubResource("LabelSettings_2a8rs")
+horizontal_alignment = 1
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="UI/HUD/MarginContainer2/HBoxContainer2"]
+layout_mode = 2
+
+[node name="Combo" type="Label" parent="UI/HUD/MarginContainer2/HBoxContainer2/VBoxContainer2"]
+custom_minimum_size = Vector2(620, 0)
+layout_mode = 2
+text = "Combo: 0"
+label_settings = SubResource("LabelSettings_87uf6")
+horizontal_alignment = 1
+
+[node name="PatternGridContainer" parent="UI/HUD"]
+_import_path = NodePath("")
+unique_name_in_owner = false
+process_mode = 0
+process_priority = 0
+process_physics_priority = 0
+process_thread_group = 0
+physics_interpolation_mode = 0
+auto_translate_mode = 0
+editor_description = ""
+visible = false
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -59,8 +147,10 @@ offset_top = 143.0
 offset_right = -20.0
 offset_bottom = 263.0
 grow_horizontal = 0
+script = null
 
 [node name="PositionLabel" type="Label" parent="UI/HUD"]
+visible = false
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -75,49 +165,32 @@ theme_override_font_sizes/font_size = 18
 text = "Bar 1, Beat 1"
 horizontal_alignment = 1
 
-[node name="LegendLabel" type="RichTextLabel" parent="UI/HUD"]
+[node name="MarginContainer" type="MarginContainer" parent="UI/HUD"]
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -400.0
-offset_top = 23.0
-offset_right = -20.0
-offset_bottom = 131.0
-grow_horizontal = 0
-theme_override_font_sizes/normal_font_size = 16
-bbcode_enabled = true
-text = "[b]Current Layer:[/b]
-[color=#ff5555]Red[/color] = Kick (beats 1 & 5)
-[color=#55ff55]Green[/color] = Snare (beats 3 & 7)
-[color=#aaaaff]Blue[/color] = Hi-hat (beats 2, 4, 6, 8)"
-
-[node name="InstructionsLabel" type="Label" parent="UI/HUD"]
-layout_mode = 0
-anchor_left = 0.5
+anchors_preset = 12
 anchor_top = 1.0
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -300.0
-offset_top = -120.0
-offset_right = 300.0
-offset_bottom = -80.0
+offset_top = -87.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="UI/HUD/MarginContainer"]
+layout_mode = 2
+
+[node name="InstructionsLabel" type="Label" parent="UI/HUD/MarginContainer/VBoxContainer2"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "Hit SPACE when the arrow points to the beat circles!"
+text = "Hit SPACE on target to place beats on the grid"
+label_settings = SubResource("LabelSettings_kp23o")
 horizontal_alignment = 1
 
-[node name="ControlsLabel" type="Label" parent="UI/HUD"]
-layout_mode = 0
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -300.0
-offset_top = -60.0
-offset_right = 300.0
-offset_bottom = -20.0
+[node name="ControlsLabel" type="Label" parent="UI/HUD/MarginContainer/VBoxContainer2"]
+layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "[SPACE] Hit Drum | [ESC] Pause | [R] Restart"
+text = "[ESC] Pause         [R] Restart"
+label_settings = SubResource("LabelSettings_4j704")
 horizontal_alignment = 1
 
 [node name="AudioPlayers" type="Node" parent="."]

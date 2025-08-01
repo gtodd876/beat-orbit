@@ -1,7 +1,7 @@
 # Beat Orbit - Game Jam Todo List
 
 ## 🎯 Game Overview
-Beat Orbit is a rhythm game where players time button presses as a single arrow rotates around a drum wheel. Players must match pre-defined patterns for each drum layer (Kick → Snare → Hi-Hat) to progress.
+Beat Orbit is a rhythm game where players time button presses as a single arrow rotates around a drum wheel. The game starts directly on the main gameplay screen. Players progress through rounds (Kick → Snare → Hi-Hat), with hit targets appearing on specific beats for each round. The pattern grid at the bottom controls drum sample playback and shows recorded hits.
 
 ## Current Implementation Status ✅
 - ✅ Core gameplay loop working
@@ -12,38 +12,53 @@ Beat Orbit is a rhythm game where players time button presses as a single arrow 
 - ✅ Basic scoring and combo system
 - ✅ Audio samples integrated
 - ✅ Input system (SPACE to hit, ESC to pause, R to restart)
+- ⚠️ Need to update: Pattern grid should control playback (not the wheel)
+- ⚠️ Need to update: Current beat indicator in pattern grid
 
 ---
 
 ## 🔴 High Priority Tasks (Must Have for Game Jam)
 
-### 1. Visual Polish (2 hours)
-- [ ] Add synthwave background - grid pattern or gradient with glow
-- [ ] Add glow shader to arrow and beat circles for neon effect
-- [ ] Create proper visual styling for the drum wheel
-- [ ] Add emission/bloom post-processing for that Tron aesthetic
+### 1. Visual Assets Integration (1.5 hours)
+- [X] Integrate background (synthwave grid/gradient)
+- [X] Place magenta circle for beat positions
+- [X] Position 4 blue hit targets on appropriate beats
+- [X] Add drum wheel center graphic
+- [X] Integrate rotating arrow
+- [X] Style pattern grid with background
+- [X] Add beat cells that light up when recorded
+- [X] Add current beat indicator that moves along top row
+- [X] Apply any glow effects/overlays
 
-### 2. Game Structure (1.5 hours)
-- [ ] Create main menu scene with Play/Quit buttons
-- [ ] Create level complete screen showing score and next level button
-- [ ] Create game over screen with final score
-- [ ] Implement proper scene transitions
+### 2. Gameplay Updates (1 hour)
+- [X] Move drum sample playback from wheel to pattern grid
+- [X] Implement current beat tracking in pattern grid (visual indicator)
+- [X] Light up pattern grid cells on current beat (blue glow)
+- [X] Update hit target positioning for round-based progression
+- [X] Ensure arrow rotation is visual only (not tied to playback speed)
 
 ### 3. Level Design (1 hour)
-- [ ] Design 4-5 levels with progressively harder patterns
-- [ ] Level 1: 60 BPM - Simple 4/4 pattern (tutorial)
-- [ ] Level 2: 80 BPM - Add syncopation
-- [ ] Level 3: 100 BPM - Complex patterns
-- [ ] Level 4: 120 BPM - Full drum patterns
-- [ ] Create level loading system
+- [ ] Design 4-5 levels with specific beat patterns per round
+- [ ] Level 1: Kick (1,5), Snare (3,7), Hi-hat (2,4,6,8)
+- [ ] Level 2: More complex beat placement patterns
+- [ ] Level 3: Syncopated patterns with off-beats
+- [ ] Level 4: Full drum kit patterns
+- [ ] Configure BPM progression (120 → 130 → 140 → 150)
 
-### 4. Web Export (30 min)
+### 4. Game Structure (1 hour) 
+- [ ] Skip main menu - start directly on gameplay
+- [ ] Create level complete overlay showing score
+- [ ] Add "Next Level" button to progress
+- [ ] Create game over screen with final score
+- [ ] Add restart functionality
+
+### 5. Web Export (30 min)
 - [ ] Test web build locally
 - [ ] Optimize for 60fps performance
 - [ ] Fix any audio latency issues
 - [ ] Test in multiple browsers
 
-### 5. itch.io Release (30 min)
+### 6. itch.io Release (30 min)
 - [ ] Create itch.io page
 - [ ] Write game description
 - [ ] Record gameplay GIFs
@@ -53,30 +68,30 @@ Beat Orbit is a rhythm game where players time button presses as a single arrow 
 
 ## 🟡 Medium Priority Tasks (Should Have)
 
-### 6. Juice & Game Feel (1 hour)
+### 7. Juice & Game Feel (1 hour)
 - [ ] Create particle burst effects for Perfect/Good hits
 - [ ] Add tweens for smooth UI animations
 - [ ] Implement subtle screen shake on perfect hits
 - [ ] Add satisfying UI sound effects
 
-### 7. Audio Enhancement (45 min)
+### 8. Audio Enhancement (45 min)
 - [ ] Add synthwave background music loop
 - [ ] Implement audio ducking during gameplay
-- [ ] Add menu click sounds
+- [ ] Add UI click sounds
 - [ ] Create victory fanfare
 
-### 8. UI Polish (45 min)
-- [ ] Style UI with neon colors (cyan, hot pink, purple)
+### 9. UI Polish (45 min)
+- [ ] Apply Affinity Designer color scheme throughout
 - [ ] Find and implement synthwave-style font
 - [ ] Improve score display with animations
 - [ ] Add visual feedback for combo streaks
 
-### 9. Pause System (30 min)
-- [ ] Implement pause overlay with resume/restart/quit options
+### 10. Pause System (30 min)
+- [ ] Implement pause overlay with resume/restart options
 - [ ] Ensure all animations pause correctly
 - [ ] Add darkened background during pause
 
-### 10. Tutorial (30 min)
+### 11. Tutorial (30 min)
 - [ ] Create first-play instruction overlay
 - [ ] Or make Level 1 a guided tutorial
 - [ ] Add control reminders in UI

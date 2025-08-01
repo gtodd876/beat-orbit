@@ -7,6 +7,9 @@ Beat Orbit is a rhythm game built in Godot 4.4 for GMTK Game Jam 2025 (theme: "L
 
 ## Key Development Commands
 
+### Fix linting error 
+use gdlint to check for linting error s and warnings and fix them before finishing your task. use gdlint and gdformat on the command line.
+
 ### Running the Game
 ```bash
 # Open in Godot Editor
