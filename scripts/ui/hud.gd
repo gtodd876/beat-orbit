@@ -170,10 +170,6 @@ func update_pattern_grid():
 			if not drum_wheel.current_layer in display_pattern[beat_idx]:
 				display_pattern[beat_idx].append(drum_wheel.current_layer)
 
-	# Update the old hidden pattern grid if it exists
-	# Commented out since pattern_grid container doesn't exist
-	#if pattern_grid:
-	#	pattern_grid.update_pattern(display_pattern)
 
 	# Create visual beat cells - only if pattern grid nodes exist
 	if active_cell_template and pattern_grid_node:
@@ -202,10 +198,6 @@ func update_pattern_grid():
 
 
 func update_beat_cursor(beat_position):
-	# Pattern grid cursor update disabled
-	#if pattern_grid:
-	#	pattern_grid.update_cursor(beat_position)
-
 	# Move the visual beat marker - only if nodes exist
 	if beat_marker and pattern_grid_node:
 		# Position beat marker based on current beat

@@ -163,8 +163,6 @@ func check_hit():
 	var raw_beat = int(round(normalized_angle / beat_angle)) % 8
 	# Apply offset to align beats correctly (beat 1 at 12 o'clock)
 	var closest_beat = (raw_beat - 2 + 8) % 8
-	# For display purposes, show beats as 1-8
-	# var display_beat = closest_beat + 1  # Currently unused
 	# Calculate timing accuracy
 	# The raw_beat value represents the actual angle position
 	# We need to use raw_beat for angle calculation, not the offset closest_beat
@@ -371,8 +369,6 @@ func update_target_visuals():
 				hit_targets.append(new_target)
 
 
-func get_layer_color() -> Color:
-	return get_color_for_layer(current_layer)
 
 
 func get_color_for_layer(layer: DrumType) -> Color:
@@ -386,7 +382,6 @@ func get_color_for_layer(layer: DrumType) -> Color:
 	return Color.WHITE
 
 
-# Removed - pattern sounds now play from HUD/pattern grid
 
 
 func play_drum_sound(drum_type: DrumType):
