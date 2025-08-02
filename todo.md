@@ -39,9 +39,11 @@ Beat Orbit is a rhythm game where players time button presses as a single arrow 
 - [X] Add restart functionality (R key)
 
 ### 3. Background Music (30 min)
-- [ ] Add synthwave background music loop
-- [ ] Sync music BPM with game BPM
-- [ ] Implement audio ducking during gameplay
+- [X] Add synthwave background music loop to level 1
+- [ ] Add synthwave background music loop to level 2
+- [ ] Add synthwave background music loop to level 3
+- [ ] Add synthwave background music loop to level 4
+- [X] Sync music BPM with game BPM
 
 ### 4. Web Export (30 min)
 - [ ] Test web build locally
@@ -61,14 +63,11 @@ Beat Orbit is a rhythm game where players time button presses as a single arrow 
 
 ### 1. Juice & Game Feel (1 hour)
 - [X] Create particle burst effects for Perfect/Good hits
-- [ ] Add tweens for smooth UI animations
-- [ ] Implement subtle screen shake on misses
-- [ ] Add satisfying UI sound effects
+- [X] Add tweens for smooth UI animations
 
 ### 2. Audio Enhancement (45 min)
-- [ ] Add UI click sounds
 - [ ] Create victory fanfare
-- [ ] Improve drum sample quality
+- [X] Improve drum sample quality
 
 ### 3. UI Polish (45 min)
 - [X] Apply Affinity Designer color scheme throughout

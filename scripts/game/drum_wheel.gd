@@ -56,13 +56,15 @@ var beat_timer: float = 0.0
 var current_beat: int = 0
 var is_playing: bool = false
 
+# Music playback
+var music_start_time: float = 0.0
+
 # Animation state (non-blocking)
 var spin_animation_active: bool = false
 var spin_target_rotation: float = 0.0
 var spin_start_rotation: float = 0.0
 var spin_progress: float = 0.0
 var spin_duration: float = 0.0
-
 
 # Public variables
 var hit_targets: Array = []
@@ -74,6 +76,11 @@ var hit_feedback_manager: HitFeedbackManager = null
 @onready var beat_positions_ring = $Sprite2D  # The magenta circle showing beat positions
 @onready var screen_shake: ScreenShakeManager = null
 @onready var ui_sound_manager: UISoundManager = null
+@onready var music_player: AudioStreamPlayer = null
+
+# Miss feedback line
+var miss_line: Line2D = null
+var miss_line_timer: float = 0.0
 
 
 func _ready():
@@ -108,9 +115,25 @@ func _ready():
 	# Try to find UI sound manager
 	ui_sound_manager = get_node_or_null("/root/Game/UISoundManager")
 
+	# Get music player reference
+	var audio_players = get_node("/root/Game/AudioPlayers")
+	if audio_players:
+		music_player = audio_players.get_node("MusicPlayer")
+
+	# Create miss feedback line
+	miss_line = Line2D.new()
+	miss_line.width = 3.0
+	miss_line.default_color = Color(0.85, 0.35, 0.85, 0.8)  # Magenta with slight transparency
+	miss_line.visible = false
+	add_child(miss_line)
+
 	# Start playing
 	is_playing = true
 	update_target_visuals()
+
+	# Start music playback
+	if music_player and music_player.stream:
+		music_player.play()
 
 
 func setup_hit_targets():
@@ -127,7 +150,6 @@ func setup_hit_targets():
 func _process(delta):
 	if not is_playing:
 		return
-
 
 	# Handle spin animation if active
 	if spin_animation_active:
@@ -160,16 +182,32 @@ func _process(delta):
 		# The arrow sprite should have its pivot at the center of the wheel
 		# and extend outward to the radius
 
-	# Update beat timer
-	beat_timer += delta
-	# Beat duration would be 60.0 / bpm, but not needed here
+	# Update beat timer based on music position for perfect sync
+	var beat_duration = 60.0 / GameData.bpm
 
-	# Check if we've hit a new beat
-	var new_beat = int((arrow_rotation + PI / 2) / (TAU / 8)) % 8
-	if new_beat != current_beat:
-		current_beat = new_beat
-		emit_signal("beat_played", current_beat)
-		# Don't play sounds here - let the pattern grid handle it
+	if music_player and music_player.playing:
+		# Use music position as the source of truth
+		var music_position = music_player.get_playback_position()
+		var total_beats = int(music_position / beat_duration)
+		var new_beat = total_beats % 8
+
+		# Only emit signal when we actually change beats
+		if new_beat != current_beat:
+			current_beat = new_beat
+			emit_signal("beat_played", current_beat)
+	else:
+		# Fallback to timer-based beats if music isn't playing
+		beat_timer += delta
+		if beat_timer >= beat_duration:
+			beat_timer -= beat_duration
+			current_beat = (current_beat + 1) % 8
+			emit_signal("beat_played", current_beat)
+
+	# Update miss line visibility
+	if miss_line_timer > 0:
+		miss_line_timer -= delta
+		if miss_line_timer <= 0:
+			miss_line.visible = false
 
 
 func _input(event):
@@ -193,7 +231,6 @@ func _input(event):
 
 
 func check_hit():
-
 	# Calculate which beat the arrow is closest to
 	# Arrow starts at -PI/2 (12 o'clock) and rotates clockwise
 	# We want: Beat 1 at 12 o'clock, Beat 3 at 3 o'clock, Beat 5 at 6 o'clock, Beat 7 at 9 o'clock
@@ -253,7 +290,7 @@ func check_hit():
 
 		# Play drum sound
 		play_drum_sound(current_layer)
-		
+
 		# Add visual spin effect based on drum type
 		apply_visual_effect(current_layer)
 
@@ -269,6 +306,9 @@ func check_hit():
 			hit_feedback_manager.spawn_feedback(feedback_pos, "MISS")
 
 		play_miss_sound()
+
+		# Show miss line from arrow to nearest beat
+		show_miss_line(closest_beat)
 
 		# Track misses
 		miss_count += 1
@@ -300,7 +340,7 @@ func apply_visual_effect(drum_type: DrumType):
 				spin_target_rotation = arrow_rotation + TAU  # Full circle
 				spin_progress = 0.0
 				spin_duration = 0.4
-			
+
 		DrumType.SNARE:
 			# Half spin (180 degrees) then sync back
 			if not spin_animation_active:
@@ -309,28 +349,16 @@ func apply_visual_effect(drum_type: DrumType):
 				spin_target_rotation = arrow_rotation + PI  # Half circle
 				spin_progress = 0.0
 				spin_duration = 0.3
-			
+
 		DrumType.HIHAT:
 			# Instant direction change
 			rotation_speed *= -1
 
 
 func sync_to_nearest_beat():
-	# Find the nearest beat position and snap to it
-	var beat_angle = TAU / 8
-	var normalized_angle = wrapf(arrow_rotation + PI / 2, 0, TAU)
-	var nearest_beat = round(normalized_angle / beat_angle)
-	var target_angle = (nearest_beat * beat_angle) - PI / 2
-	
-	# Wrap the target angle
-	while target_angle >= TAU:
-		target_angle -= TAU
-	while target_angle < 0:
-		target_angle += TAU
-		
-	arrow_rotation = target_angle
-
-
+	# Don't sync to beat positions anymore - just resume normal rotation
+	# The arrow should spin freely, not locked to beat positions
+	pass
 
 
 func is_layer_complete(layer: DrumType) -> bool:
@@ -492,7 +520,14 @@ func reset_game():
 	miss_count = 0
 	is_playing = true
 	spin_animation_active = false
+	beat_timer = 0.0  # Reset beat timer
+	current_beat = 0  # Reset to first beat
 	update_target_visuals()
+
+	# Restart music
+	if music_player and music_player.stream:
+		music_player.stop()
+		music_player.play()
 
 
 func start_next_level():
@@ -511,6 +546,10 @@ func start_next_level():
 
 	# Let HUD know level has started
 	emit_signal("level_started")
+
+	# Restart music for new level
+	if music_player and music_player.stream:
+		music_player.play()
 
 
 func show_hit_feedback_at_beat(beat_number: int, timing_quality: String):
@@ -656,3 +695,23 @@ func load_level_patterns():
 	print("Kick pattern: ", kick_pattern)
 	print("Snare pattern: ", snare_pattern)
 	print("Hi-hat pattern: ", hihat_pattern)
+
+
+func show_miss_line(_target_beat: int):
+	# Show a line from center through the arrow's current position
+	# This shows exactly where the player aimed when they missed
+
+	# Calculate where the arrow is pointing (arrow starts at -PI/2, pointing up)
+	# The arrow sprite points up by default, so we need to account for that
+	var actual_angle = arrow_rotation - PI / 2
+	var arrow_direction = Vector2(cos(actual_angle), sin(actual_angle))
+	var arrow_end_pos = arrow_direction * wheel_radius
+
+	# Set line points from center through arrow position (offset by wheel center)
+	miss_line.clear_points()
+	miss_line.add_point(wheel_center_offset)  # Center of wheel
+	miss_line.add_point(wheel_center_offset + arrow_end_pos)  # Where arrow is pointing
+
+	# Show the line
+	miss_line.visible = true
+	miss_line_timer = 0.5  # Show for 0.5 seconds

@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://bq5v4npmmltgx"]
+[gd_scene load_steps=23 format=3 uid="uid://bq5v4npmmltgx"]
 
 [ext_resource type="Script" uid="uid://cwlk84px0jcu7" path="res://scripts/game/drum_wheel.gd" id="1_sul5r"]
 [ext_resource type="Texture2D" uid="uid://c6ei7fh6qh2kr" path="res://assets/art/sprites/drum-wheel-2x.png" id="2_2a8rs"]
@@ -6,16 +6,17 @@
 [ext_resource type="FontFile" uid="uid://du3smcf51mvpm" path="res://assets/fonts/Audiowide-Regular.ttf" id="3_87uf6"]
 [ext_resource type="Texture2D" uid="uid://c6h8s3np4mq8a" path="res://assets/art/sprites/hit-target-flag-2x.png" id="3_kp23o"]
 [ext_resource type="Texture2D" uid="uid://lymtf0ma0f8u" path="res://assets/art/sprites/arrow-2x.png" id="4_5jirj"]
-[ext_resource type="AudioStream" uid="uid://do5ook2v5rkeu" path="res://assets/audio/drums/kick/kick2.wav" id="5_bdhmt"]
 [ext_resource type="Texture2D" uid="uid://b6qqw4empcl4p" path="res://assets/art/sprites/pattern-grid-mk2-x2.png" id="5_ftsea"]
-[ext_resource type="AudioStream" uid="uid://c25vqpklfjxiq" path="res://assets/audio/drums/snare/snare.wav" id="6_87uf6"]
 [ext_resource type="Texture2D" uid="uid://dlexkmv5l8104" path="res://assets/art/sprites/grid-beat-marker-2x.png" id="6_ftsea"]
-[ext_resource type="AudioStream" uid="uid://jy14x4p0iqid" path="res://assets/audio/drums/hithat/hihat.wav" id="7_2a8rs"]
 [ext_resource type="Texture2D" uid="uid://decq6iumx5eu7" path="res://assets/art/sprites/drum-hit-on-grid-2x.png" id="7_otnwt"]
 [ext_resource type="AudioStream" uid="uid://m2k4875j3i8o" path="res://assets/audio/sfx/miss.wav" id="8_miss"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_dialog.tscn" id="9_dialog"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_overlay.tscn" id="10_pause"]
+[ext_resource type="AudioStream" uid="uid://clkim8ed3p3li" path="res://assets/audio/drums/kick/kick3.wav" id="13_uyinl"]
+[ext_resource type="AudioStream" uid="uid://dnwbxk1qtruaw" path="res://assets/audio/drums/snare/snare2.wav" id="14_10c2w"]
 [ext_resource type="Script" uid="uid://bgvj1xd0pbp1b" path="res://scripts/effects/particle_manager.gd" id="14_pm_script"]
+[ext_resource type="AudioStream" uid="uid://bfjb5dv7mfb5x" path="res://assets/audio/music/level-1-music.wav" id="15_music"]
+[ext_resource type="AudioStream" uid="uid://x4au334quhxt" path="res://assets/audio/drums/hithat/hihat2.wav" id="15_pg2xm"]
 [ext_resource type="PackedScene" path="res://scenes/effects/screen_shake_manager.tscn" id="17_5v6r0"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_2a8rs"]
@@ -188,16 +189,24 @@ layout_mode = 3
 [node name="AudioPlayers" type="Node" parent="."]
 
 [node name="KickPlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
-stream = ExtResource("5_bdhmt")
+stream = ExtResource("13_uyinl")
+volume_db = -3.0
 
 [node name="SnarePlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
-stream = ExtResource("6_87uf6")
+stream = ExtResource("14_10c2w")
+volume_db = -6.0
 
 [node name="HiHatPlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
-stream = ExtResource("7_2a8rs")
+stream = ExtResource("15_pg2xm")
+volume_db = -3.0
 
 [node name="MissPlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
 stream = ExtResource("8_miss")
 volume_db = -6.0
+
+[node name="MusicPlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
+stream = ExtResource("15_music")
+volume_db = -10.0
+bus = &"Music"
 
 [node name="ScreenShakeManager" parent="." instance=ExtResource("17_5v6r0")]

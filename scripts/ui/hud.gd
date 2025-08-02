@@ -281,22 +281,16 @@ func show_completion_message(message: String):
 	if is_layer_complete and game_dialog and game_dialog.visible:
 		return
 
-	# Create a big centered message with background
-	var container = MarginContainer.new()
-	container.set_anchors_preset(Control.PRESET_FULL_RECT)
-	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Create a container positioned on the right side  
+	var container = Control.new()
+	container.position = Vector2(550, 300)  # Move left for more padding from edge
+	container.size = Vector2(400, 100)
 	current_completion_message = container
-
-	# Create center container to hold the message
-	var center_container = CenterContainer.new()
-	center_container.set_anchors_preset(Control.PRESET_FULL_RECT)
-	container.add_child(center_container)
 
 	# Create panel with message
 	var panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(600, 120)
-	center_container.add_child(panel)
+	panel.custom_minimum_size = Vector2(400, 100)
+	container.add_child(panel)
 
 	# Set panel background
 	var style = StyleBoxFlat.new()
@@ -318,37 +312,23 @@ func show_completion_message(message: String):
 
 	$HUD.add_child(container)
 
-	# Start slightly above and scale up
-	center_container.modulate.a = 0
-	center_container.scale = Vector2(0.5, 0.5)
+	# Start with container off to the right and transparent
+	container.modulate.a = 0
+	container.position.x = 1300  # Start off-screen to the right
 
 	# Animate in with more dramatic effect
 	var tween = create_tween()
 	tween.set_parallel(true)
-	# Fade in
-	tween.tween_property(center_container, "modulate:a", 1.0, 0.3).set_ease(Tween.EASE_OUT)
-	# Overshoot scale for impact
-	(
-		tween
-		. tween_property(center_container, "scale", Vector2(1.2, 1.2), 0.3)
-		. set_trans(Tween.TRANS_BACK)
-		. set_ease(Tween.EASE_OUT)
+	# Fade in and slide from right
+	tween.tween_property(container, "modulate:a", 1.0, 0.3).set_ease(Tween.EASE_OUT)
+	tween.tween_property(container, "position:x", 550, 0.3).set_trans(Tween.TRANS_BACK).set_ease(
+		Tween.EASE_OUT
 	)
-	# Settle to normal size
-	tween.chain().tween_property(center_container, "scale", Vector2(1.0, 1.0), 0.2).set_trans(
-		Tween.TRANS_SINE
-	)
-	# Add subtle rotation for celebration
-	tween.set_parallel(true)
-	tween.tween_property(center_container, "rotation", deg_to_rad(5), 0.15).set_trans(
-		Tween.TRANS_SINE
-	)
-	tween.tween_property(center_container, "rotation", deg_to_rad(-5), 0.3).set_trans(
-		Tween.TRANS_SINE
-	)
-	tween.tween_property(center_container, "rotation", 0, 0.15).set_trans(Tween.TRANS_SINE)
-	# Fade out
-	tween.chain().tween_property(center_container, "modulate:a", 0, 1.0).set_delay(1.5)
+	# Small bounce effect
+	tween.chain().tween_property(container, "position:x", 530, 0.1).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(container, "position:x", 550, 0.1).set_trans(Tween.TRANS_SINE)
+	# Fade out after longer delay
+	tween.chain().tween_property(container, "modulate:a", 0, 1.0).set_delay(3.0)
 	tween.finished.connect(
 		func():
 			if is_instance_valid(container):
@@ -499,8 +479,7 @@ func restart_game():
 
 	# Recalculate rotation speed with reset BPM
 	var beat_duration = 60.0 / GameData.bpm
-	drum_wheel.base_rotation_speed = TAU / (beat_duration * 8)
-	drum_wheel.rotation_speed = drum_wheel.base_rotation_speed
+	drum_wheel.rotation_speed = TAU / (beat_duration * 8)
 
 	# Load level 1 patterns and reset
 	drum_wheel.load_level_patterns()
