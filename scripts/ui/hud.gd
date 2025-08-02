@@ -15,6 +15,8 @@ var current_completion_message = null  # Track current completion message
 @onready var pattern_grid_node = get_node("/root/Game/PatternGrid")
 @onready var beat_marker = get_node("/root/Game/PatternGrid/BeatMarker")
 @onready var active_cell_template = get_node("/root/Game/PatternGrid/ActiveCell")
+@onready var game_dialog = $GameDialog
+@onready var ui_sound_manager = null
 
 
 func _ready():
@@ -26,15 +28,29 @@ func _ready():
 		drum_wheel.pattern_complete.connect(_on_pattern_complete)
 		drum_wheel.layer_complete.connect(_on_layer_complete)
 		drum_wheel.level_started.connect(_on_level_started)
+		drum_wheel.game_over.connect(_on_game_over)
+
+	if game_dialog:
+		game_dialog.continue_pressed.connect(_on_dialog_continue)
 
 	update_score_display()
 	update_instructions()
 	update_pattern_grid()
 	update_position_label(0)
 
+	# Set initial window title
+	var title_text = "Level %d" % GameData.current_level
+	get_tree().get_root().title = "Beat Orbit - " + title_text
+
 	# Hide the template active cell
 	if active_cell_template:
 		active_cell_template.visible = false
+
+	# Enable input processing for restart key
+	set_process_input(true)
+
+	# Try to find UI sound manager
+	ui_sound_manager = get_node_or_null("/root/Game/UISoundManager")
 
 
 func _on_drum_hit(_drum_type, timing_quality, _beat_position):
@@ -52,7 +68,7 @@ func _on_drum_hit(_drum_type, timing_quality, _beat_position):
 		max_combo = combo
 
 	update_score_display()
-	show_hit_feedback(timing_quality)
+	# Hit feedback is handled by HitFeedbackManager in drum_wheel
 
 	# Update pattern grid when a hit is registered
 	if timing_quality != "MISS":
@@ -77,12 +93,16 @@ func _on_pattern_complete():
 	# Update pattern grid with the current pattern
 	update_pattern_grid()
 
-	# Show completion message
-	show_completion_message("PATTERN COMPLETE!")
-
-	# Update instructions
-	if instructions_label:
-		instructions_label.text = "Press SPACE for next level!"
+	# Show level complete dialog
+	print("Pattern complete! Showing dialog...")
+	if game_dialog:
+		# Check if this was the final level
+		if GameData.current_level >= 4:
+			game_dialog.show_dialog(game_dialog.DialogType.GAME_WIN, score, combo)
+		else:
+			game_dialog.show_dialog(game_dialog.DialogType.LEVEL_COMPLETE, score, combo)
+	else:
+		print("ERROR: game_dialog is null in _on_pattern_complete!")
 
 
 func _on_layer_complete(drum_type):
@@ -96,47 +116,74 @@ func _on_layer_complete(drum_type):
 		2:  # HIHAT
 			layer_name = "HI-HAT LAYER"
 
+	# Temporarily show layer complete message (will be replaced by dialog animations later)
 	show_completion_message(layer_name + " COMPLETE!")
 
 
 func update_score_display():
 	if score_label:
 		score_label.text = "Score: %d" % [score]
+		# Animate score label
+		var tween = create_tween()
+		tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+		score_label.pivot_offset = score_label.size / 2
+		tween.tween_property(score_label, "scale", Vector2(1.15, 1.15), 0.1)
+		tween.tween_property(score_label, "scale", Vector2(1.0, 1.0), 0.3)
+
 	if combo_label:
 		combo_label.text = "Combo: %d" % [combo]
+		# Animate combo label with color pulse for milestones
+		var tween = create_tween()
+		combo_label.pivot_offset = combo_label.size / 2
+
+		if combo > 0 and combo % 10 == 0:  # Milestone every 10 combos
+			# Big celebration animation
+			tween.set_parallel(true)
+			# Play combo milestone sound
+			if ui_sound_manager:
+				ui_sound_manager.play_combo_milestone()
+			(
+				tween
+				. tween_property(combo_label, "scale", Vector2(1.3, 1.3), 0.15)
+				. set_trans(Tween.TRANS_BACK)
+				. set_ease(Tween.EASE_OUT)
+			)
+			tween.tween_property(combo_label, "modulate", Color(1.0, 0.9, 0.2), 0.15)  # Golden flash
+			tween.chain().set_parallel(true)
+			tween.tween_property(combo_label, "scale", Vector2(1.0, 1.0), 0.4).set_trans(
+				Tween.TRANS_ELASTIC
+			)
+			tween.tween_property(combo_label, "modulate", Color.WHITE, 0.4)
+		elif combo > 0:
+			# Normal combo animation
+			tween.tween_property(combo_label, "scale", Vector2(1.1, 1.1), 0.08).set_trans(
+				Tween.TRANS_QUAD
+			)
+			tween.tween_property(combo_label, "scale", Vector2(1.0, 1.0), 0.2).set_trans(
+				Tween.TRANS_ELASTIC
+			)
+
+	# Update level display in the title
+	var title_text = "Level %d" % GameData.current_level
+	get_tree().get_root().title = "Beat Orbit - " + title_text
 
 
-func show_hit_feedback(timing_quality):
-	# Don't show feedback for misses
-	if timing_quality == "MISS":
-		return
+# Removed show_hit_feedback function - now handled by HitFeedbackManager in drum_wheel
 
-	# Create temporary label for hit feedback
-	var feedback_label = Label.new()
-	feedback_label.text = timing_quality
 
-	match timing_quality:
-		"PERFECT":
-			feedback_label.modulate = Color(0, 1, 1)  # Cyan
-		"GOOD":
-			feedback_label.modulate = Color(1, 1, 0)  # Yellow
-
-	feedback_label.position = get_viewport().get_mouse_position()
-	$HUD.add_child(feedback_label)
-
-	# Animate feedback
-	var tween = create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(feedback_label, "position:y", feedback_label.position.y - 50, 0.5)
-	tween.tween_property(feedback_label, "modulate:a", 0, 0.5)
-	tween.finished.connect(func(): feedback_label.queue_free())
+func _input(event):
+	if event.is_action_pressed("restart"):
+		# Unpause if paused before restarting
+		if get_tree().paused:
+			get_tree().paused = false
+		restart_game()
 
 
 func update_instructions():
 	if instructions_label:
-		instructions_label.text = "Hit SPACE when the arrow points to the targets!"
+		instructions_label.text = "Hit SPACE on target to trigger beat on the grid"
 	if controls_label:
-		controls_label.text = "[SPACE] Hit Drum | [ESC] Pause | [R] Restart"
+		controls_label.text = "[ESC] Pause         [R] Restart"
 
 
 func update_pattern_grid():
@@ -170,7 +217,6 @@ func update_pattern_grid():
 			if not drum_wheel.current_layer in display_pattern[beat_idx]:
 				display_pattern[beat_idx].append(drum_wheel.current_layer)
 
-
 	# Create visual beat cells - only if pattern grid nodes exist
 	if active_cell_template and pattern_grid_node:
 		# Use same positioning as beat marker
@@ -191,10 +237,16 @@ func update_pattern_grid():
 				new_cell.position.x = start_x + (beat_idx * cell_width)
 				new_cell.position.y = start_y + (drum_type * cell_height)
 
-				# Don't modify colors - use original sprite colors
+				# Animate cell appearance
+				new_cell.modulate.a = 0
+				# Keep the original small scale from the template
 
 				pattern_grid_node.add_child(new_cell)
 				active_beat_cells.append(new_cell)
+
+				# Create smooth fade-in animation (no scale change)
+				var tween = create_tween()
+				tween.tween_property(new_cell, "modulate:a", 1.0, 0.3).set_ease(Tween.EASE_OUT)
 
 
 func update_beat_cursor(beat_position):
@@ -225,51 +277,101 @@ func show_completion_message(message: String):
 
 	# Don't show layer complete messages if pattern is already complete
 	var is_layer_complete = message.ends_with("LAYER COMPLETE!")
-	var is_pattern_done = instructions_label.text == "Press SPACE for next level!"
-	if is_layer_complete and is_pattern_done:
+	if is_layer_complete and game_dialog and game_dialog.visible:
 		return
 
 	# Create a big centered message with background
-	var container = Control.new()
-	container.set_anchors_preset(Control.PRESET_CENTER)
-	container.size = Vector2(600, 120)
-	container.position = Vector2(-300, -60)
+	var container = MarginContainer.new()
+	container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	current_completion_message = container
 
-	# Add background panel
-	var bg = ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.8)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	container.add_child(bg)
+	# Create center container to hold the message
+	var center_container = CenterContainer.new()
+	center_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.add_child(center_container)
+
+	# Create panel with message
+	var panel = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(600, 120)
+	center_container.add_child(panel)
+
+	# Set panel background
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0.8)
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
+	panel.add_theme_stylebox_override("panel", style)
 
 	# Add text
 	var completion_label = Label.new()
 	completion_label.text = message
 	completion_label.add_theme_font_size_override("font_size", 48)
 	completion_label.modulate = Color(0, 1, 1)  # Cyan
-	completion_label.set_anchors_preset(Control.PRESET_CENTER)
-	completion_label.position = Vector2(-250, -30)
-	container.add_child(completion_label)
+	completion_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	completion_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	panel.add_child(completion_label)
 
 	$HUD.add_child(container)
 
-	# Animate
+	# Start slightly above and scale up
+	center_container.modulate.a = 0
+	center_container.scale = Vector2(0.5, 0.5)
+
+	# Animate in with more dramatic effect
 	var tween = create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(container, "scale", Vector2(1.2, 1.2), 0.3)
-	tween.tween_property(container, "modulate:a", 0, 2.5).set_delay(1.0)
-	tween.finished.connect(func():
-		if is_instance_valid(container):
-			container.queue_free()
-		if current_completion_message == container:
-			current_completion_message = null
+	# Fade in
+	tween.tween_property(center_container, "modulate:a", 1.0, 0.3).set_ease(Tween.EASE_OUT)
+	# Overshoot scale for impact
+	(
+		tween
+		. tween_property(center_container, "scale", Vector2(1.2, 1.2), 0.3)
+		. set_trans(Tween.TRANS_BACK)
+		. set_ease(Tween.EASE_OUT)
+	)
+	# Settle to normal size
+	tween.chain().tween_property(center_container, "scale", Vector2(1.0, 1.0), 0.2).set_trans(
+		Tween.TRANS_SINE
+	)
+	# Add subtle rotation for celebration
+	tween.set_parallel(true)
+	tween.tween_property(center_container, "rotation", deg_to_rad(5), 0.15).set_trans(
+		Tween.TRANS_SINE
+	)
+	tween.tween_property(center_container, "rotation", deg_to_rad(-5), 0.3).set_trans(
+		Tween.TRANS_SINE
+	)
+	tween.tween_property(center_container, "rotation", 0, 0.15).set_trans(Tween.TRANS_SINE)
+	# Fade out
+	tween.chain().tween_property(center_container, "modulate:a", 0, 1.0).set_delay(1.5)
+	tween.finished.connect(
+		func():
+			if is_instance_valid(container):
+				container.queue_free()
+			if current_completion_message == container:
+				current_completion_message = null
 	)
 
 
 func _on_level_started():
+	# Clear any lingering completion messages
+	if current_completion_message and is_instance_valid(current_completion_message):
+		current_completion_message.queue_free()
+		current_completion_message = null
+
 	# Reset instructions for new level
 	update_instructions()
 	update_pattern_grid()
+
+	# Update window title for new level
+	var title_text = "Level %d" % GameData.current_level
+	get_tree().get_root().title = "Beat Orbit - " + title_text
+
+	print("Level started: ", GameData.current_level)
 
 
 func play_pattern_sounds_at_beat(beat_position: int):
@@ -315,8 +417,91 @@ func light_up_beat_cells(beat_position: int):
 
 			# Check if cell is in this beat column (within tolerance)
 			if abs(cell.position.x - beat_x) < 10:
-				# Flash the cell
+				# Enhanced flash animation with subtle scale
 				var tween = create_tween()
+				tween.set_parallel(true)
 				var original_modulate = cell.modulate
-				cell.modulate = Color(0, 1, 1)  # Cyan flash
-				tween.tween_property(cell, "modulate", original_modulate, 0.2)
+				var original_scale = cell.scale
+
+				# Color flash
+				cell.modulate = Color(1.5, 1.5, 1.5)  # Bright white flash
+				tween.tween_property(cell, "modulate", original_modulate, 0.3).set_trans(
+					Tween.TRANS_SINE
+				)
+
+				# Very subtle scale pulse - just 5% bigger
+				(
+					tween
+					. tween_property(cell, "scale", original_scale * 1.05, 0.1)
+					. set_trans(Tween.TRANS_QUAD)
+					. set_ease(Tween.EASE_OUT)
+				)
+				tween.chain().tween_property(cell, "scale", original_scale, 0.2).set_trans(
+					Tween.TRANS_SINE
+				)
+
+
+func _on_game_over():
+	# Show game over dialog
+	print("Game Over triggered! Score: ", score, " Combo: ", combo)
+	if game_dialog:
+		print("Showing game dialog...")
+		game_dialog.show_dialog(game_dialog.DialogType.GAME_OVER, score, combo)
+	else:
+		print("ERROR: game_dialog is null!")
+
+
+func _on_dialog_continue():
+	var drum_wheel = get_node("/root/Game/DrumWheel")
+	if not drum_wheel:
+		return
+
+	if game_dialog.dialog_type == game_dialog.DialogType.LEVEL_COMPLETE:
+		# Update score with combo bonus
+		score = game_dialog.final_score
+		update_score_display()
+
+		# Advance to next level
+		GameData.current_level += 1
+		print("Advancing to level ", GameData.current_level)
+		drum_wheel.start_next_level()
+	else:
+		# Game over or game win - reset everything
+		score = 0
+		combo = 0
+		max_combo = 0
+		GameData.current_level = 1
+		update_score_display()
+		# Load level 1 patterns before resetting
+		drum_wheel.load_level_patterns()
+		drum_wheel.reset_game()
+		# Clear the pattern grid display
+		update_pattern_grid()
+
+
+func restart_game():
+	# Hide dialog if it's showing
+	if game_dialog and game_dialog.visible:
+		game_dialog.hide_dialog()
+
+	var drum_wheel = get_node("/root/Game/DrumWheel")
+	if not drum_wheel:
+		return
+
+	# Reset everything
+	score = 0
+	combo = 0
+	max_combo = 0
+	GameData.current_level = 1
+	GameData.update_bpm_for_level(1)
+	update_score_display()
+
+	# Recalculate rotation speed with reset BPM
+	var beat_duration = 60.0 / GameData.bpm
+	drum_wheel.base_rotation_speed = TAU / (beat_duration * 8)
+	drum_wheel.rotation_speed = drum_wheel.base_rotation_speed
+
+	# Load level 1 patterns and reset
+	drum_wheel.load_level_patterns()
+	drum_wheel.reset_game()
+	update_pattern_grid()

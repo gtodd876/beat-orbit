@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8xmr7hv8qj1s"]
+
+[ext_resource type="Script" path="res://scripts/effects/screen_shake_manager.gd" id="1_shake"]
+
+[node name="ScreenShakeManager" type="Camera2D"]
+position = Vector2(640, 360)
+script = ExtResource("1_shake")

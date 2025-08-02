@@ -7,6 +7,7 @@ signal pattern_complete
 signal beat_played(beat_number: int)
 signal layer_complete(drum_type: DrumType)
 signal level_started
+signal game_over
 
 # Drum types
 enum DrumType { KICK, SNARE, HIHAT }
@@ -15,10 +16,11 @@ enum DrumType { KICK, SNARE, HIHAT }
 const PERFECT_WINDOW = 0.05
 const GOOD_WINDOW = 0.1
 const MISS_WINDOW = 0.15
-const KICK_COLOR = Color(1, 0.2, 0.2)  # Red
-const SNARE_COLOR = Color(0.2, 1, 0.2)  # Green
-const HIHAT_COLOR = Color(0.2, 0.2, 1)  # Blue
-const INACTIVE_COLOR = Color(0.3, 0.3, 0.3)  # Gray
+# New color palette
+const BLUE_COLOR = Color(0.2, 0.8, 1.0)  # HSL(196, 99, 66) converted to RGB
+const MAGENTA_COLOR = Color(0.85, 0.35, 0.85)  # HSL(303, 67, 51) converted to RGB
+const BLACK_COLOR = Color(0.09, 0.09, 0.09)  # HSL(0, 0, 9)
+const WHITE_COLOR = Color(1.0, 1.0, 1.0)  # White
 
 # Visual settings
 @export var wheel_radius: float = 200.0
@@ -28,13 +30,10 @@ const INACTIVE_COLOR = Color(0.3, 0.3, 0.3)  # Gray
 # Audio settings
 @export var bpm: float = 120.0
 
-# Pattern data - predetermined patterns for each drum type
-# Beats 1 & 5 (indices 0 & 4)
-var kick_pattern = [true, false, false, false, true, false, false, false]
-# Beats 3 & 7 (indices 2 & 6)
-var snare_pattern = [false, false, true, false, false, false, true, false]
-# Beats 2, 4, 6, 8 (indices 1, 3, 5, 7)
-var hihat_pattern = [false, true, false, true, false, true, false, true]
+# Pattern data - loaded from GameData based on current level
+var kick_pattern: Array = []
+var snare_pattern: Array = []
+var hihat_pattern: Array = []
 
 # Game state
 var current_layer: DrumType = DrumType.KICK
@@ -47,6 +46,8 @@ var player_pattern: Dictionary = {
 	DrumType.HIHAT: [false, false, false, false, false, false, false, false]
 }
 var is_pattern_complete: bool = false
+var miss_count: int = 0
+var max_misses: int = 3
 
 # Rotation state
 var arrow_rotation: float = 0.0
@@ -70,13 +71,22 @@ var hit_targets: Array = []
 @onready var arrow_node = $Arrow
 @onready var hit_target_container = $HitTargetContainer
 @onready var beat_positions_ring = $Sprite2D  # The magenta circle showing beat positions
+@onready var hit_feedback_manager = $HitFeedbackManager
+@onready var screen_shake: ScreenShakeManager = null
+@onready var ui_sound_manager: UISoundManager = null
 
 
 func _ready():
+	# Update BPM for current level
+	GameData.update_bpm_for_level(GameData.current_level)
+
 	# Calculate rotation speed based on BPM
-	var beat_duration = 60.0 / bpm
+	var beat_duration = 60.0 / GameData.bpm
 	base_rotation_speed = TAU / (beat_duration * 8)  # 8 beats per rotation
 	rotation_speed = base_rotation_speed
+
+	# Load patterns for current level
+	load_level_patterns()
 
 	# Setup hit targets
 	setup_hit_targets()
@@ -86,6 +96,18 @@ func _ready():
 		# Set the arrow's offset so it rotates from its bottom
 		# This makes it rotate like a clock hand
 		arrow_node.offset = Vector2(0, -100)  # Adjust based on arrow sprite size
+
+	# Create hit feedback manager if it doesn't exist
+	if not hit_feedback_manager:
+		var HfmScene = preload("res://scenes/effects/hit_feedback_manager.tscn")
+		hit_feedback_manager = HfmScene.instantiate()
+		add_child(hit_feedback_manager)
+
+	# Try to find screen shake manager
+	screen_shake = get_node_or_null("/root/Game/ScreenShakeManager")
+
+	# Try to find UI sound manager
+	ui_sound_manager = get_node_or_null("/root/Game/UISoundManager")
 
 	# Start playing
 	is_playing = true
@@ -146,6 +168,17 @@ func _process(delta):
 
 func _input(event):
 	if event.is_action_pressed("hit_drum"):
+		# Don't process input if not playing or if paused
+		if not is_playing or get_tree().paused:
+			return
+
+		# Check if game dialog is visible
+		var ui = get_node("/root/Game/UI")
+		if ui:
+			var game_dialog = ui.get_node("GameDialog")
+			if game_dialog and game_dialog.visible:
+				return
+
 		if is_pattern_complete:
 			# When pattern is complete, SPACE advances to next level
 			start_next_level()
@@ -176,6 +209,9 @@ func check_hit():
 	if time_difference <= PERFECT_WINDOW:
 		timing_quality = "PERFECT"
 		success = true
+		# Trigger screen shake for perfect hits
+		if screen_shake:
+			screen_shake.shake_perfect_hit()
 	elif time_difference <= GOOD_WINDOW:
 		timing_quality = "GOOD"
 		success = true
@@ -218,6 +254,12 @@ func check_hit():
 
 		# Play miss sound
 		play_miss_sound()
+
+		# Track misses
+		miss_count += 1
+		if miss_count >= max_misses:
+			is_playing = false
+			emit_signal("game_over")
 
 		# Emit miss signal
 		emit_signal("drum_hit", current_layer, "MISS", closest_beat)
@@ -318,6 +360,14 @@ func complete_current_layer():
 	completed_layers[current_layer] = true
 	emit_signal("layer_complete", current_layer)
 
+	# Trigger screen shake for layer completion
+	if screen_shake:
+		screen_shake.shake_layer_complete()
+
+	# Play layer complete sound
+	if ui_sound_manager:
+		ui_sound_manager.play_layer_complete()
+
 	# Move to next layer
 	if current_layer == DrumType.KICK:
 		current_layer = DrumType.SNARE
@@ -331,6 +381,13 @@ func complete_current_layer():
 		emit_signal("pattern_complete")
 		# Hide all hit targets since pattern is complete
 		hide_all_targets()
+		# Trigger big screen shake for pattern completion
+		if screen_shake:
+			screen_shake.shake_pattern_complete()
+
+		# Play pattern complete sound
+		if ui_sound_manager:
+			ui_sound_manager.play_pattern_complete()
 
 
 func update_target_visuals():
@@ -368,20 +425,20 @@ func update_target_visuals():
 				hit_target_container.add_child(new_target)
 				hit_targets.append(new_target)
 
-
+				# Add subtle pulse animation to draw attention
+				add_pulse_animation(new_target)
 
 
 func get_color_for_layer(layer: DrumType) -> Color:
+	# Use the new color palette - alternate between blue and magenta
 	match layer:
 		DrumType.KICK:
-			return KICK_COLOR
+			return BLUE_COLOR
 		DrumType.SNARE:
-			return SNARE_COLOR
+			return MAGENTA_COLOR
 		DrumType.HIHAT:
-			return HIHAT_COLOR
-	return Color.WHITE
-
-
+			return BLUE_COLOR
+	return WHITE_COLOR
 
 
 func play_drum_sound(drum_type: DrumType):
@@ -429,12 +486,24 @@ func reset_game():
 	arrow_rotation = -PI / 2  # Start at beat 1 (12 o'clock)
 	is_animating = false
 	is_pattern_complete = false
+	miss_count = 0
+	is_playing = true
 	update_target_visuals()
 
 
 func start_next_level():
-	# For now, just reset the game
-	# In the future, this could load a new pattern or increase difficulty
+	# Update BPM for new level
+	GameData.update_bpm_for_level(GameData.current_level)
+
+	# Recalculate rotation speed with new BPM
+	var beat_duration = 60.0 / GameData.bpm
+	base_rotation_speed = TAU / (beat_duration * 8)
+	rotation_speed = base_rotation_speed
+
+	# Load patterns for the new level
+	load_level_patterns()
+
+	# Reset the game state
 	reset_game()
 
 	# Let HUD know level has started
@@ -446,7 +515,15 @@ func show_hit_feedback_at_beat(beat_number: int, timing_quality: String):
 	for i in range(hit_targets.size()):
 		var target = hit_targets[i]
 		if target.has_meta("beat_number") and target.get_meta("beat_number") == beat_number:
+			# Spawn hit feedback text
+			if hit_feedback_manager:
+				var feedback_pos = target.global_position
+				hit_feedback_manager.spawn_feedback(feedback_pos, timing_quality)
+
 			if timing_quality == "PERFECT" or timing_quality == "GOOD":
+				# Spawn particle effect at target position
+				spawn_hit_particles_at_position(target.global_position, timing_quality)
+
 				# Remove the target on successful hit
 				var tween = create_tween()
 				tween.set_parallel(true)
@@ -474,3 +551,88 @@ func show_hit_feedback_at_beat(beat_number: int, timing_quality: String):
 func hide_all_targets():
 	for target in hit_targets:
 		target.visible = false
+
+
+func spawn_hit_particles_at_position(pos: Vector2, timing_quality: String):
+	# Create particles at the Game level to ensure they render on top
+	var game_node = get_node("/root/Game")
+	if not game_node:
+		return
+
+	# Load particle scene
+	var particles = preload("res://scenes/effects/hit_particles.tscn").instantiate()
+
+	# Configure particle properties
+	particles.emitting = true
+	particles.position = pos
+	particles.z_index = 1000  # Very high z-index to ensure it's on top
+
+	# Use only disc particle for now
+	particles.texture = preload("res://assets/art/sprites/particle-disc.png")
+
+	# Set color based on current drum layer
+	var particle_color = get_color_for_layer(current_layer)
+	particle_color = particle_color.lightened(0.3)  # Slightly less bright for custom sprites
+	particles.modulate = particle_color
+
+	# Calculate direction away from drum wheel center
+	var drum_center = global_position + wheel_center_offset
+	var direction_away = (pos - drum_center).normalized()
+
+	# Adjust particle properties based on timing quality
+	var proc_material = particles.process_material as ParticleProcessMaterial
+	if proc_material:
+		# Set direction to spray outward from the drum
+		proc_material.direction = Vector3(direction_away.x, direction_away.y, 0)
+		proc_material.spread = 15.0  # Narrow spread for focused burst
+
+		match timing_quality:
+			"PERFECT":
+				proc_material.scale_min = 0.1
+				proc_material.scale_max = 0.3
+				proc_material.initial_velocity_min = 400.0
+				proc_material.initial_velocity_max = 700.0
+				particles.amount = 25
+				particles.lifetime = 0.8
+			"GOOD":
+				proc_material.scale_min = 0.08
+				proc_material.scale_max = 0.2
+				proc_material.initial_velocity_min = 300.0
+				proc_material.initial_velocity_max = 500.0
+				particles.amount = 15
+				particles.lifetime = 0.6
+
+	# Add to game and auto-remove after emission
+	game_node.add_child(particles)
+
+	# Remove particles after they finish
+	await particles.finished
+	particles.queue_free()
+
+
+func add_pulse_animation(target: Node2D):
+	# Create a looping pulse animation for the target
+	var tween = create_tween()
+	tween.set_loops()
+	tween.set_trans(Tween.TRANS_SINE)
+
+	# Store original scale
+	var original_scale = target.scale
+
+	# Pulse between original and slightly larger - more subtle
+	tween.tween_property(target, "scale", original_scale * 1.08, 0.8).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(target, "scale", original_scale, 0.8).set_ease(Tween.EASE_IN_OUT)
+
+	# Store tween reference so we can stop it later
+	target.set_meta("pulse_tween", tween)
+
+
+func load_level_patterns():
+	# Load patterns from GameData based on current level
+	print("Loading patterns for level ", GameData.current_level)
+	kick_pattern = GameData.get_pattern_for_level(GameData.current_level, "kick")
+	snare_pattern = GameData.get_pattern_for_level(GameData.current_level, "snare")
+	hihat_pattern = GameData.get_pattern_for_level(GameData.current_level, "hihat")
+	print("Kick pattern: ", kick_pattern)
+	print("Snare pattern: ", snare_pattern)
+	print("Hi-hat pattern: ", hihat_pattern)

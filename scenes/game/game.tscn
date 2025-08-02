@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://bq5v4npmmltgx"]
+[gd_scene load_steps=21 format=3 uid="uid://bq5v4npmmltgx"]
 
 [ext_resource type="Script" uid="uid://cwlk84px0jcu7" path="res://scripts/game/drum_wheel.gd" id="1_sul5r"]
 [ext_resource type="Texture2D" uid="uid://c6ei7fh6qh2kr" path="res://assets/art/sprites/drum-wheel-2x.png" id="2_2a8rs"]
@@ -13,6 +13,9 @@
 [ext_resource type="AudioStream" uid="uid://jy14x4p0iqid" path="res://assets/audio/drums/hithat/hihat.wav" id="7_2a8rs"]
 [ext_resource type="Texture2D" uid="uid://decq6iumx5eu7" path="res://assets/art/sprites/drum-hit-on-grid-2x.png" id="7_otnwt"]
 [ext_resource type="AudioStream" uid="uid://m2k4875j3i8o" path="res://assets/audio/sfx/miss.wav" id="8_miss"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_dialog.tscn" id="9_dialog"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_overlay.tscn" id="10_pause"]
+[ext_resource type="Script" uid="uid://bgvj1xd0pbp1b" path="res://scripts/effects/particle_manager.gd" id="14_pm_script"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_2a8rs"]
 font = ExtResource("3_87uf6")
@@ -62,6 +65,9 @@ texture = ExtResource("3_kp23o")
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("4_5jirj")
 
+[node name="ParticleManager" type="Node2D" parent="DrumWheel"]
+script = ExtResource("14_pm_script")
+
 [node name="PatternGrid" type="Node2D" parent="."]
 
 [node name="Sprite2D" type="Sprite2D" parent="PatternGrid"]
@@ -78,7 +84,7 @@ scale = Vector2(0.5, 0.5)
 texture = ExtResource("6_ftsea")
 
 [node name="ActiveCell" type="Sprite2D" parent="PatternGrid"]
-scale = Vector2(0.5, 0.5)
+scale = Vector2(0.45, 0.45)
 texture = ExtResource("7_otnwt")
 
 [node name="UI" type="CanvasLayer" parent="."]
@@ -127,28 +133,6 @@ text = "Combo: 0"
 label_settings = SubResource("LabelSettings_87uf6")
 horizontal_alignment = 1
 
-[node name="PatternGridContainer" parent="UI/HUD"]
-_import_path = NodePath("")
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 0
-auto_translate_mode = 0
-editor_description = ""
-visible = false
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -320.0
-offset_top = 143.0
-offset_right = -20.0
-offset_bottom = 263.0
-grow_horizontal = 0
-script = null
-
 [node name="PositionLabel" type="Label" parent="UI/HUD"]
 visible = false
 layout_mode = 1
@@ -192,6 +176,13 @@ theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "[ESC] Pause         [R] Restart"
 label_settings = SubResource("LabelSettings_4j704")
 horizontal_alignment = 1
+
+[node name="GameDialog" parent="UI" instance=ExtResource("9_dialog")]
+layout_mode = 3
+
+[node name="PauseOverlay" parent="UI" instance=ExtResource("10_pause")]
+visible = false
+layout_mode = 3
 
 [node name="AudioPlayers" type="Node" parent="."]
 

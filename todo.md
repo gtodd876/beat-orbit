@@ -24,19 +24,19 @@ Beat Orbit is a rhythm game where players time button presses as a single arrow 
 
 
 ### 1. Level Design (1 hour)
-- [ ] Design 4-5 levels with specific beat patterns per round
-- [ ] Level 1: Kick (1,5), Snare (3,7), Hi-hat (2,4,6,8)
-- [ ] Level 2: More complex beat placement patterns
-- [ ] Level 3: Syncopated patterns with off-beats
-- [ ] Level 4: Full drum kit patterns
-- [ ] Configure BPM progression (120 → 130 → 140 → 150)
+- [X] Design 4 levels with specific beat patterns per round
+- [X] Level 1: Kick (1,5), Snare (3,7), Hi-hat (2,4,6,8)
+- [X] Level 2: More complex beat placement patterns
+- [X] Level 3: Syncopated patterns with off-beats
+- [X] Level 4: Full drum kit patterns
+- [X] Configure BPM progression (120 → 130 → 140 → 150)
 
 ### 2. Game Structure (1 hour) 
 - [X] Skip main menu - start directly on gameplay
-- [ ] Create level complete overlay showing score
-- [ ] Add "Next Level" button to progress
-- [ ] Create game over screen with final score
-- [ ] Add restart functionality (R key)
+- [X] Create level complete overlay showing score
+- [X] Use level complete overlay also for game over state
+- [X] Add "Next Level" button to progress - use space
+- [X] Add restart functionality (R key)
 
 ### 3. Background Music (30 min)
 - [ ] Add synthwave background music loop
@@ -60,9 +60,9 @@ Beat Orbit is a rhythm game where players time button presses as a single arrow 
 ## 🟡 Medium Priority Tasks (Should Have)
 
 ### 1. Juice & Game Feel (1 hour)
-- [ ] Create particle burst effects for Perfect/Good hits
+- [X] Create particle burst effects for Perfect/Good hits
 - [ ] Add tweens for smooth UI animations
-- [ ] Implement subtle screen shake on perfect hits
+- [ ] Implement subtle screen shake on misses
 - [ ] Add satisfying UI sound effects
 
 ### 2. Audio Enhancement (45 min)
@@ -77,9 +77,9 @@ Beat Orbit is a rhythm game where players time button presses as a single arrow 
 - [ ] Add visual feedback for combo streaks
 
 ### 4. Pause System (30 min)
-- [ ] Implement pause overlay with resume/restart options
-- [ ] Ensure all animations pause correctly
-- [ ] Add darkened background during pause
+- [X] Implement pause overlay with resume/restart options
+- [X] Ensure all animations pause correctly
+- [X] Add darkened background during pause
 
 ---
 
