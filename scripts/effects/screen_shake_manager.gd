@@ -4,7 +4,7 @@ extends Camera2D
 # Shake parameters
 var shake_intensity: float = 0.0
 var shake_decay: float = 5.0  # How fast the shake fades
-var max_offset: Vector2 = Vector2(10, 10)  # Maximum shake offset
+var max_shake_offset: Vector2 = Vector2(10, 10)  # Maximum shake offset - renamed to avoid shadowing
 
 # Internal state
 var _shake_timer: float = 0.0
@@ -24,15 +24,15 @@ func _process(delta):
 		_shake_timer = max(0, _shake_timer)
 
 		# Calculate shake offset
-		var offset = (
+		var shake_offset = (
 			Vector2(
-				randf_range(-max_offset.x, max_offset.x), randf_range(-max_offset.y, max_offset.y)
+				randf_range(-max_shake_offset.x, max_shake_offset.x), randf_range(-max_shake_offset.y, max_shake_offset.y)
 			)
 			* _shake_timer
 		)
 
 		# Apply shake
-		position = _initial_position + offset
+		position = _initial_position + shake_offset
 	else:
 		# Return to initial position
 		position = _initial_position

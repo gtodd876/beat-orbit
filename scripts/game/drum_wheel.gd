@@ -56,22 +56,22 @@ var beat_timer: float = 0.0
 var current_beat: int = 0
 var is_playing: bool = false
 
-# Wild animation state
-var is_animating: bool = false
-var animation_timer: float = 0.0
-var animation_duration: float = 0.0
-var animation_type: String = ""
-var base_rotation_speed: float = 0.0
-var target_rotation: float = 0.0
+# Animation state (non-blocking)
+var spin_animation_active: bool = false
+var spin_target_rotation: float = 0.0
+var spin_start_rotation: float = 0.0
+var spin_progress: float = 0.0
+var spin_duration: float = 0.0
+
 
 # Public variables
 var hit_targets: Array = []
+var hit_feedback_manager: HitFeedbackManager = null
 
 # Visual elements - @onready variables
 @onready var arrow_node = $Arrow
 @onready var hit_target_container = $HitTargetContainer
 @onready var beat_positions_ring = $Sprite2D  # The magenta circle showing beat positions
-@onready var hit_feedback_manager = $HitFeedbackManager
 @onready var screen_shake: ScreenShakeManager = null
 @onready var ui_sound_manager: UISoundManager = null
 
@@ -82,8 +82,7 @@ func _ready():
 
 	# Calculate rotation speed based on BPM
 	var beat_duration = 60.0 / GameData.bpm
-	base_rotation_speed = TAU / (beat_duration * 8)  # 8 beats per rotation
-	rotation_speed = base_rotation_speed
+	rotation_speed = TAU / (beat_duration * 8)  # 8 beats per rotation
 
 	# Load patterns for current level
 	load_level_patterns()
@@ -129,18 +128,27 @@ func _process(delta):
 	if not is_playing:
 		return
 
-	# Handle wild animations
-	if is_animating:
-		handle_animation(delta)
+
+	# Handle spin animation if active
+	if spin_animation_active:
+		spin_progress += delta / spin_duration
+		if spin_progress >= 1.0:
+			# Animation complete, sync to nearest beat
+			spin_animation_active = false
+			sync_to_nearest_beat()
+		else:
+			# Smooth spin animation
+			var eased_progress = ease(spin_progress, -1.5)  # Ease out
+			arrow_rotation = lerp(spin_start_rotation, spin_target_rotation, eased_progress)
 	else:
 		# Normal rotation
 		arrow_rotation += rotation_speed * delta
 
-		# Wrap around
-		if arrow_rotation >= TAU:
-			arrow_rotation -= TAU
-		elif arrow_rotation < 0:
-			arrow_rotation += TAU
+	# Wrap around
+	if arrow_rotation >= TAU:
+		arrow_rotation -= TAU
+	elif arrow_rotation < 0:
+		arrow_rotation += TAU
 
 	# Update arrow visual
 	if arrow_node:
@@ -160,9 +168,7 @@ func _process(delta):
 	var new_beat = int((arrow_rotation + PI / 2) / (TAU / 8)) % 8
 	if new_beat != current_beat:
 		current_beat = new_beat
-		# Only emit beat_played during normal rotation, not during wild animations
-		if not is_animating:
-			emit_signal("beat_played", current_beat)
+		emit_signal("beat_played", current_beat)
 		# Don't play sounds here - let the pattern grid handle it
 
 
@@ -182,11 +188,12 @@ func _input(event):
 		if is_pattern_complete:
 			# When pattern is complete, SPACE advances to next level
 			start_next_level()
-		elif not is_animating:
+		else:
 			check_hit()
 
 
 func check_hit():
+
 	# Calculate which beat the arrow is closest to
 	# Arrow starts at -PI/2 (12 o'clock) and rotates clockwise
 	# We want: Beat 1 at 12 o'clock, Beat 3 at 3 o'clock, Beat 5 at 6 o'clock, Beat 7 at 9 o'clock
@@ -201,7 +208,7 @@ func check_hit():
 	# We need to use raw_beat for angle calculation, not the offset closest_beat
 	var beat_target_angle = (raw_beat * beat_angle) - PI / 2
 	var angle_distance = abs(angle_diff(arrow_rotation, beat_target_angle))
-	var time_difference = angle_distance / base_rotation_speed
+	var time_difference = angle_distance / rotation_speed
 
 	var timing_quality = ""
 	var success = false
@@ -229,15 +236,16 @@ func check_hit():
 		DrumType.HIHAT:
 			correct_beat = hihat_pattern[closest_beat]
 
+	# Always give feedback when the player presses space
 	if success and correct_beat:
+		# Good timing on correct beat - success!
+		timing_quality = timing_quality  # Keep PERFECT or GOOD
+
 		# Record successful hit
 		player_pattern[current_layer][closest_beat] = true
 
-		# Visual feedback on hit target (if there's one at this position)
+		# Visual feedback on hit target
 		show_hit_feedback_at_beat(closest_beat, timing_quality)
-
-		# Start wild animation
-		start_wild_animation(current_layer)
 
 		# Check if layer is complete
 		if is_layer_complete(current_layer):
@@ -245,14 +253,21 @@ func check_hit():
 
 		# Play drum sound
 		play_drum_sound(current_layer)
+		
+		# Add visual spin effect based on drum type
+		apply_visual_effect(current_layer)
 
-		# Only emit successful hit signal
+		# Emit successful hit signal
 		emit_signal("drum_hit", current_layer, timing_quality, closest_beat)
 	else:
-		# Show miss feedback
-		show_hit_feedback_at_beat(closest_beat, "MISS")
+		# Any kind of miss - always show feedback
+		timing_quality = "MISS"
 
-		# Play miss sound
+		# Show miss feedback at the arrow position
+		if hit_feedback_manager and arrow_node:
+			var feedback_pos = arrow_node.global_position + Vector2(0, -100)
+			hit_feedback_manager.spawn_feedback(feedback_pos, "MISS")
+
 		play_miss_sound()
 
 		# Track misses
@@ -274,67 +289,48 @@ func angle_diff(a1: float, a2: float) -> float:
 	return diff
 
 
-func start_wild_animation(drum_type: DrumType):
-	is_animating = true
-	animation_timer = 0.0
-
+func apply_visual_effect(drum_type: DrumType):
+	# Apply visual effects without blocking input
 	match drum_type:
 		DrumType.KICK:
-			# 1-2 fast full rotations
-			animation_type = "kick"
-			animation_duration = 0.5
-			var spins = randi_range(1, 2)
-			var direction = 1 if randf() > 0.5 else -1
-			target_rotation = arrow_rotation + (TAU * spins * direction)
-
+			# Full spin (360 degrees) then sync back
+			if not spin_animation_active:
+				spin_animation_active = true
+				spin_start_rotation = arrow_rotation
+				spin_target_rotation = arrow_rotation + TAU  # Full circle
+				spin_progress = 0.0
+				spin_duration = 0.4
+			
 		DrumType.SNARE:
-			# Multiple random half turns
-			animation_type = "snare"
-			animation_duration = 0.4
-			var half_turns = randi_range(2, 4)
-			var direction = 1 if randf() > 0.5 else -1
-			target_rotation = arrow_rotation + (PI * half_turns * direction)
-
+			# Half spin (180 degrees) then sync back
+			if not spin_animation_active:
+				spin_animation_active = true
+				spin_start_rotation = arrow_rotation
+				spin_target_rotation = arrow_rotation + PI  # Half circle
+				spin_progress = 0.0
+				spin_duration = 0.3
+			
 		DrumType.HIHAT:
-			# Random direction change
-			animation_type = "hihat"
-			animation_duration = 0.2
-			rotation_speed *= -1  # Just reverse direction
+			# Instant direction change
+			rotation_speed *= -1
 
 
-func handle_animation(delta: float):
-	animation_timer += delta
-
-	if animation_type == "hihat":
-		# Hi-hat just reverses direction, no special animation
-		arrow_rotation += rotation_speed * delta
-		if animation_timer >= animation_duration:
-			is_animating = false
-			animation_type = ""
-	else:
-		# Kick and snare animations
-		var progress = animation_timer / animation_duration
-
-		if progress >= 1.0:
-			# Animation complete, resync to beat
-			is_animating = false
-			animation_type = ""
-			resync_to_beat()
-		else:
-			# Ease-out animation
-			var eased_progress = 1.0 - pow(1.0 - progress, 3)
-			var start_rotation = arrow_rotation
-			arrow_rotation = lerp(start_rotation, target_rotation, eased_progress * delta * 10)
-
-
-func resync_to_beat():
-	# Find the nearest beat position and smoothly align to it
+func sync_to_nearest_beat():
+	# Find the nearest beat position and snap to it
 	var beat_angle = TAU / 8
 	var normalized_angle = wrapf(arrow_rotation + PI / 2, 0, TAU)
 	var nearest_beat = round(normalized_angle / beat_angle)
 	var target_angle = (nearest_beat * beat_angle) - PI / 2
-
+	
+	# Wrap the target angle
+	while target_angle >= TAU:
+		target_angle -= TAU
+	while target_angle < 0:
+		target_angle += TAU
+		
 	arrow_rotation = target_angle
+
+
 
 
 func is_layer_complete(layer: DrumType) -> bool:
@@ -365,8 +361,9 @@ func complete_current_layer():
 		screen_shake.shake_layer_complete()
 
 	# Play layer complete sound
-	if ui_sound_manager:
-		ui_sound_manager.play_layer_complete()
+	# TEMP: Disabled until proper UI sounds are implemented
+	# if ui_sound_manager:
+	# 	ui_sound_manager.play_layer_complete()
 
 	# Move to next layer
 	if current_layer == DrumType.KICK:
@@ -386,14 +383,21 @@ func complete_current_layer():
 			screen_shake.shake_pattern_complete()
 
 		# Play pattern complete sound
-		if ui_sound_manager:
-			ui_sound_manager.play_pattern_complete()
+		# TEMP: Disabled until proper UI sounds are implemented
+		# if ui_sound_manager:
+		# 	ui_sound_manager.play_pattern_complete()
 
 
 func update_target_visuals():
-	# Clear existing hit targets
+	# Clear existing hit targets and their animations
 	for target in hit_targets:
-		target.queue_free()
+		# Stop pulse animation before freeing
+		if target.has_meta("pulse_tween"):
+			var pulse_tween = target.get_meta("pulse_tween")
+			if pulse_tween and is_instance_valid(pulse_tween):
+				pulse_tween.kill()
+		if is_instance_valid(target):
+			target.queue_free()
 	hit_targets.clear()
 
 	# Get pattern for current layer
@@ -484,10 +488,10 @@ func reset_game():
 
 	current_layer = DrumType.KICK
 	arrow_rotation = -PI / 2  # Start at beat 1 (12 o'clock)
-	is_animating = false
 	is_pattern_complete = false
 	miss_count = 0
 	is_playing = true
+	spin_animation_active = false
 	update_target_visuals()
 
 
@@ -497,8 +501,7 @@ func start_next_level():
 
 	# Recalculate rotation speed with new BPM
 	var beat_duration = 60.0 / GameData.bpm
-	base_rotation_speed = TAU / (beat_duration * 8)
-	rotation_speed = base_rotation_speed
+	rotation_speed = TAU / (beat_duration * 8)
 
 	# Load patterns for the new level
 	load_level_patterns()
@@ -512,9 +515,17 @@ func start_next_level():
 
 func show_hit_feedback_at_beat(beat_number: int, timing_quality: String):
 	# Find if there's a hit target at this beat
+	var found_target = false
 	for i in range(hit_targets.size()):
 		var target = hit_targets[i]
+		if not is_instance_valid(target):
+			continue
 		if target.has_meta("beat_number") and target.get_meta("beat_number") == beat_number:
+			# Only process the first matching target
+			if found_target:
+				continue
+			found_target = true
+
 			# Spawn hit feedback text
 			if hit_feedback_manager:
 				var feedback_pos = target.global_position
@@ -525,6 +536,12 @@ func show_hit_feedback_at_beat(beat_number: int, timing_quality: String):
 				spawn_hit_particles_at_position(target.global_position, timing_quality)
 
 				# Remove the target on successful hit
+				# First stop the pulse animation
+				if target.has_meta("pulse_tween"):
+					var pulse_tween = target.get_meta("pulse_tween")
+					if pulse_tween and is_instance_valid(pulse_tween):
+						pulse_tween.kill()
+
 				var tween = create_tween()
 				tween.set_parallel(true)
 				tween.tween_property(target, "scale", Vector2(1.5, 1.5), 0.2)
@@ -546,6 +563,9 @@ func show_hit_feedback_at_beat(beat_number: int, timing_quality: String):
 				tween.tween_property(target, "modulate", Color(1, 0, 0), 0.4)  # Hold red
 				tween.tween_property(target, "modulate", original_modulate, 0.3)  # Fade back
 			break
+
+	# If no target was found and it's a miss, don't show feedback
+	# This prevents showing miss feedback at positions where there's no target
 
 
 func hide_all_targets():

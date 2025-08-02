@@ -140,8 +140,9 @@ func update_score_display():
 			# Big celebration animation
 			tween.set_parallel(true)
 			# Play combo milestone sound
-			if ui_sound_manager:
-				ui_sound_manager.play_combo_milestone()
+			# TEMP: Disabled until proper UI sounds are implemented
+			# if ui_sound_manager:
+			# 	ui_sound_manager.play_combo_milestone()
 			(
 				tween
 				. tween_property(combo_label, "scale", Vector2(1.3, 1.3), 0.15)

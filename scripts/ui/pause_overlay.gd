@@ -24,8 +24,9 @@ func show_pause():
 	scale = Vector2(0.8, 0.8)
 
 	# Play pause sound
-	if ui_sound_manager:
-		ui_sound_manager.play_sound(ui_sound_manager.UISound.PAUSE_IN)
+	# TEMP: Disabled until proper UI sounds are implemented
+	# if ui_sound_manager:
+	# 	ui_sound_manager.play_sound(ui_sound_manager.UISound.PAUSE_IN)
 
 	var tween = create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # Continue during pause
@@ -58,8 +59,9 @@ func hide_pause():
 			visible = false
 			get_tree().paused = false
 			# Play unpause sound
-			if ui_sound_manager:
-				ui_sound_manager.play_sound(ui_sound_manager.UISound.PAUSE_OUT)
+			# TEMP: Disabled until proper UI sounds are implemented
+			# if ui_sound_manager:
+			# 	ui_sound_manager.play_sound(ui_sound_manager.UISound.PAUSE_OUT)
 	)
 
 

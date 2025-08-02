@@ -54,8 +54,9 @@ func show_dialog(type: DialogType, score: int, combo: int):
 	tween.set_parallel(true)
 
 	# Play dialog open sound
-	if ui_sound_manager:
-		ui_sound_manager.play_sound(ui_sound_manager.UISound.DIALOG_OPEN)
+	# TEMP: Disabled until proper UI sounds are implemented
+	# if ui_sound_manager:
+	# 	ui_sound_manager.play_sound(ui_sound_manager.UISound.DIALOG_OPEN)
 	tween.tween_property(self, "modulate:a", 1.0, 0.3).set_ease(Tween.EASE_OUT)
 	(
 		tween
@@ -128,6 +129,7 @@ func hide_dialog():
 			visible = false
 			emit_signal("continue_pressed")
 			# Play dialog close sound
-			if ui_sound_manager:
-				ui_sound_manager.play_sound(ui_sound_manager.UISound.DIALOG_CLOSE)
+			# TEMP: Disabled until proper UI sounds are implemented
+			# if ui_sound_manager:
+			# 	ui_sound_manager.play_sound(ui_sound_manager.UISound.DIALOG_CLOSE)
 	)

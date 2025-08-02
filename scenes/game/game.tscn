@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://bq5v4npmmltgx"]
+[gd_scene load_steps=22 format=3 uid="uid://bq5v4npmmltgx"]
 
 [ext_resource type="Script" uid="uid://cwlk84px0jcu7" path="res://scripts/game/drum_wheel.gd" id="1_sul5r"]
 [ext_resource type="Texture2D" uid="uid://c6ei7fh6qh2kr" path="res://assets/art/sprites/drum-wheel-2x.png" id="2_2a8rs"]
@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/game_dialog.tscn" id="9_dialog"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_overlay.tscn" id="10_pause"]
 [ext_resource type="Script" uid="uid://bgvj1xd0pbp1b" path="res://scripts/effects/particle_manager.gd" id="14_pm_script"]
+[ext_resource type="PackedScene" path="res://scenes/effects/screen_shake_manager.tscn" id="17_5v6r0"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_2a8rs"]
 font = ExtResource("3_87uf6")
@@ -198,3 +199,5 @@ stream = ExtResource("7_2a8rs")
 [node name="MissPlayer" type="AudioStreamPlayer" parent="AudioPlayers"]
 stream = ExtResource("8_miss")
 volume_db = -6.0
+
+[node name="ScreenShakeManager" parent="." instance=ExtResource("17_5v6r0")]

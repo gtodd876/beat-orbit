@@ -128,6 +128,7 @@ Classes must follow this specific order:
 - Avoid unnecessary `pass` statements
 - Don't use `elif`/`else` after `return`
 - Remove unused arguments
+- NEVER BLOCK USER INPUT AND HARM RESPONSIVE FEELING OF THE GAME
 
 ### Running Linter
 ```bash
