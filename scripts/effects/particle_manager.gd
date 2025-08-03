@@ -12,7 +12,7 @@ var pool_size: int = 10
 func _ready():
 	# Set high z-index to render above everything
 	z_index = 100
-	
+
 	# Pre-create particle instances
 	for i in range(pool_size):
 		var particles = HIT_PARTICLES_SCENE.instantiate()

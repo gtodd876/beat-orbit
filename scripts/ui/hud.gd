@@ -5,6 +5,7 @@ var combo: int = 0
 var max_combo: int = 0
 var active_beat_cells: Array = []  # Store references to active beat cell sprites
 var current_completion_message = null  # Track current completion message
+var life_sprites: Array = []  # Store references to life indicator sprites
 
 @onready var score_label = $HUD/MarginContainer2/HBoxContainer2/VBoxContainer/Score
 @onready var combo_label = $HUD/MarginContainer2/HBoxContainer2/VBoxContainer2/Combo
@@ -17,6 +18,7 @@ var current_completion_message = null  # Track current completion message
 @onready var active_cell_template = get_node("/root/Game/PatternGrid/ActiveCell")
 @onready var game_dialog = $GameDialog
 @onready var ui_sound_manager = null
+@onready var win_music_player: AudioStreamPlayer = null
 
 
 func _ready():
@@ -33,6 +35,13 @@ func _ready():
 	if game_dialog:
 		game_dialog.continue_pressed.connect(_on_dialog_continue)
 
+	# Make sure score label is visible
+	if score_label:
+		score_label.visible = true
+
+	# Create lives display
+	create_lives_display()
+
 	update_score_display()
 	update_instructions()
 	update_pattern_grid()
@@ -46,11 +55,35 @@ func _ready():
 	if active_cell_template:
 		active_cell_template.visible = false
 
+	# Set up win music player
+	win_music_player = AudioStreamPlayer.new()
+	win_music_player.name = "WinMusicPlayer"
+	win_music_player.bus = "Music"
+	win_music_player.volume_db = -10.0
+	add_child(win_music_player)
+
+	# Load win music
+	var win_music = load("res://assets/audio/music/win-music.wav")
+	if win_music:
+		win_music_player.stream = win_music
+	else:
+		# print("ERROR: Could not load win-music.wav")
+		pass
+
 	# Enable input processing for restart key
 	set_process_input(true)
 
 	# Try to find UI sound manager
 	ui_sound_manager = get_node_or_null("/root/Game/UISoundManager")
+
+
+func update_lives_display(miss_count: int):
+	# Hide life sprites based on miss count
+	for i in range(life_sprites.size()):
+		if i < miss_count:
+			life_sprites[life_sprites.size() - 1 - i].visible = false
+		else:
+			life_sprites[life_sprites.size() - 1 - i].visible = true
 
 
 func _on_drum_hit(_drum_type, timing_quality, _beat_position):
@@ -63,6 +96,10 @@ func _on_drum_hit(_drum_type, timing_quality, _beat_position):
 			combo += 1
 		"MISS":
 			combo = 0
+			# Update lives display
+			var drum_wheel = get_node("/root/Game/DrumWheel")
+			if drum_wheel:
+				update_lives_display(drum_wheel.miss_count)
 
 	if combo > max_combo:
 		max_combo = combo
@@ -94,18 +131,45 @@ func _on_pattern_complete():
 	update_pattern_grid()
 
 	# Show level complete dialog
-	print("Pattern complete! Showing dialog...")
+	# print("Pattern complete! Showing dialog...")
 	if game_dialog:
 		# Check if this was the final level
-		if GameData.current_level >= 4:
+		if GameData.current_level >= 3:
+			# Stop level 3 music and play win music
+			var drum_wheel = get_node("/root/Game/DrumWheel")
+			if drum_wheel:
+				# Stop the drum wheel completely to prevent music restart
+				drum_wheel.is_playing = false
+				if drum_wheel.music_player:
+					# print("Stopping level 3 music...")
+					drum_wheel.music_player.stop()
+				else:
+					# print("ERROR: Could not find music_player")
+					pass
+			else:
+				# print("ERROR: Could not find drum_wheel")
+				pass
+
+			# Play win music
+			if win_music_player and win_music_player.stream:
+				# print("Playing win music...")
+				win_music_player.play()
+			else:
+				# print("ERROR: Could not play win music")
+				pass
+
 			game_dialog.show_dialog(game_dialog.DialogType.GAME_WIN, score, combo)
 		else:
 			game_dialog.show_dialog(game_dialog.DialogType.LEVEL_COMPLETE, score, combo)
 	else:
-		print("ERROR: game_dialog is null in _on_pattern_complete!")
+		# print("ERROR: game_dialog is null in _on_pattern_complete!")
+		pass
 
 
 func _on_layer_complete(drum_type):
+	# Skip hi-hat layer complete message since level is already complete
+	if drum_type == 2:  # HIHAT
+		return
 	# Show layer completion
 	var layer_name = ""
 	match drum_type:
@@ -113,8 +177,6 @@ func _on_layer_complete(drum_type):
 			layer_name = "KICK LAYER"
 		1:  # SNARE
 			layer_name = "SNARE LAYER"
-		2:  # HIHAT
-			layer_name = "HI-HAT LAYER"
 
 	# Temporarily show layer complete message (will be replaced by dialog animations later)
 	show_completion_message(layer_name + " COMPLETE!")
@@ -180,6 +242,37 @@ func _input(event):
 		restart_game()
 
 
+func create_lives_display():
+	# Create a container for lives to the right of combo
+	var lives_container = HBoxContainer.new()
+	lives_container.name = "LivesContainer"
+	lives_container.add_theme_constant_override("separation", 10)
+
+	# Position it to the right of the combo label
+	if combo_label and combo_label.get_parent():
+		var parent = combo_label.get_parent()
+		parent.add_child(lives_container)
+
+		# Add some spacing
+		var spacer = Control.new()
+		spacer.custom_minimum_size.x = 50
+		parent.add_child(spacer)
+		parent.move_child(spacer, parent.get_child_count() - 2)
+
+		# Load arrow texture
+		var arrow_texture = load("res://assets/art/sprites/arrow-2x.png")
+
+		# Create 3 life indicators
+		for i in range(3):
+			var life_sprite = TextureRect.new()
+			life_sprite.texture = arrow_texture
+			life_sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+			life_sprite.custom_minimum_size = Vector2(30, 30)  # Small size
+			life_sprite.modulate = Color(0, 1, 1)  # Cyan color to match UI
+			lives_container.add_child(life_sprite)
+			life_sprites.append(life_sprite)
+
+
 func update_instructions():
 	if instructions_label:
 		instructions_label.text = "Hit SPACE on target to trigger beat on the grid"
@@ -192,6 +285,8 @@ func update_pattern_grid():
 
 	if not drum_wheel:
 		return
+
+	# Remove debug logging
 
 	# Clear existing active cells
 	for cell in active_beat_cells:
@@ -238,16 +333,10 @@ func update_pattern_grid():
 				new_cell.position.x = start_x + (beat_idx * cell_width)
 				new_cell.position.y = start_y + (drum_type * cell_height)
 
-				# Animate cell appearance
-				new_cell.modulate.a = 0
 				# Keep the original small scale from the template
 
 				pattern_grid_node.add_child(new_cell)
 				active_beat_cells.append(new_cell)
-
-				# Create smooth fade-in animation (no scale change)
-				var tween = create_tween()
-				tween.tween_property(new_cell, "modulate:a", 1.0, 0.3).set_ease(Tween.EASE_OUT)
 
 
 func update_beat_cursor(beat_position):
@@ -281,7 +370,7 @@ func show_completion_message(message: String):
 	if is_layer_complete and game_dialog and game_dialog.visible:
 		return
 
-	# Create a container positioned on the right side  
+	# Create a container positioned on the right side
 	var container = Control.new()
 	container.position = Vector2(550, 300)  # Move left for more padding from edge
 	container.size = Vector2(400, 100)
@@ -348,11 +437,16 @@ func _on_level_started():
 	update_instructions()
 	update_pattern_grid()
 
+	# Update lives display with current miss count
+	var drum_wheel = get_node("/root/Game/DrumWheel")
+	if drum_wheel:
+		update_lives_display(drum_wheel.miss_count)
+
 	# Update window title for new level
 	var title_text = "Level %d" % GameData.current_level
 	get_tree().get_root().title = "Beat Orbit - " + title_text
 
-	print("Level started: ", GameData.current_level)
+	# print("Level started: ", GameData.current_level)
 
 
 func play_pattern_sounds_at_beat(beat_position: int):
@@ -398,17 +492,9 @@ func light_up_beat_cells(beat_position: int):
 
 			# Check if cell is in this beat column (within tolerance)
 			if abs(cell.position.x - beat_x) < 10:
-				# Enhanced flash animation with subtle scale
+				# Simple scale pulse animation without modifying color
 				var tween = create_tween()
-				tween.set_parallel(true)
-				var original_modulate = cell.modulate
 				var original_scale = cell.scale
-
-				# Color flash
-				cell.modulate = Color(1.5, 1.5, 1.5)  # Bright white flash
-				tween.tween_property(cell, "modulate", original_modulate, 0.3).set_trans(
-					Tween.TRANS_SINE
-				)
 
 				# Very subtle scale pulse - just 5% bigger
 				(
@@ -424,12 +510,13 @@ func light_up_beat_cells(beat_position: int):
 
 func _on_game_over():
 	# Show game over dialog
-	print("Game Over triggered! Score: ", score, " Combo: ", combo)
+	# print("Game Over triggered! Score: ", score, " Combo: ", combo)
 	if game_dialog:
-		print("Showing game dialog...")
+		# print("Showing game dialog...")
 		game_dialog.show_dialog(game_dialog.DialogType.GAME_OVER, score, combo)
 	else:
-		print("ERROR: game_dialog is null!")
+		# print("ERROR: game_dialog is null!")
+		pass
 
 
 func _on_dialog_continue():
@@ -444,15 +531,28 @@ func _on_dialog_continue():
 
 		# Advance to next level
 		GameData.current_level += 1
-		print("Advancing to level ", GameData.current_level)
+		# print("Advancing to level ", GameData.current_level)
 		drum_wheel.start_next_level()
 	else:
 		# Game over or game win - reset everything
+
+		# Stop win music if it's playing
+		if win_music_player and win_music_player.playing:
+			win_music_player.stop()
+
 		score = 0
 		combo = 0
 		max_combo = 0
 		GameData.current_level = 1
+		GameData.update_bpm_for_level(1)  # Reset BPM to level 1
 		update_score_display()
+
+		# Reset lives display
+		update_lives_display(0)
+
+		# Recalculate rotation speed with reset BPM
+		var beat_duration = 60.0 / GameData.bpm
+		drum_wheel.rotation_speed = TAU / (beat_duration * 8)
 		# Load level 1 patterns before resetting
 		drum_wheel.load_level_patterns()
 		drum_wheel.reset_game()
@@ -465,6 +565,10 @@ func restart_game():
 	if game_dialog and game_dialog.visible:
 		game_dialog.hide_dialog()
 
+	# Stop win music if it's playing
+	if win_music_player and win_music_player.playing:
+		win_music_player.stop()
+
 	var drum_wheel = get_node("/root/Game/DrumWheel")
 	if not drum_wheel:
 		return
@@ -476,6 +580,9 @@ func restart_game():
 	GameData.current_level = 1
 	GameData.update_bpm_for_level(1)
 	update_score_display()
+
+	# Reset lives display
+	update_lives_display(0)
 
 	# Recalculate rotation speed with reset BPM
 	var beat_duration = 60.0 / GameData.bpm

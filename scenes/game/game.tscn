@@ -120,6 +120,7 @@ layout_mode = 2
 alignment = 1
 
 [node name="Score" type="Label" parent="UI/HUD/MarginContainer2/HBoxContainer2/VBoxContainer"]
+visible = false
 layout_mode = 2
 text = "Score: 000"
 label_settings = SubResource("LabelSettings_2a8rs")

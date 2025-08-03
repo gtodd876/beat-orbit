@@ -34,11 +34,18 @@ func _ready():
 
 
 func _process(delta):
-	if visible and dialog_type == DialogType.LEVEL_COMPLETE and not can_continue:
+	if (
+		visible
+		and (dialog_type == DialogType.LEVEL_COMPLETE or dialog_type == DialogType.GAME_WIN)
+		and not can_continue
+	):
 		continue_delay_timer += delta
 		if continue_delay_timer >= 4.0:
 			can_continue = true
-			action_label.text = "Press SPACE for next level"
+			if dialog_type == DialogType.LEVEL_COMPLETE:
+				action_label.text = "Press SPACE for next level"
+			else:  # GAME_WIN
+				action_label.text = "You Win! Press SPACE to restart"
 			# Animate the action label appearing
 			action_label.modulate.a = 0.0
 			var tween = create_tween()
@@ -53,13 +60,13 @@ func show_dialog(type: DialogType, score: int, combo: int):
 	can_continue = false
 	continue_delay_timer = 0.0
 
-	print("Dialog show_dialog called with type: ", type)
+	# print("Dialog show_dialog called with type: ", type)
 	visible = true
-	print("Dialog visible set to true")
+	# print("Dialog visible set to true")
 
 	# Ensure all labels exist
 	if not title_label:
-		print("ERROR: title_label is null!")
+		# print("ERROR: title_label is null!")
 		return
 
 	# Set initial state for animation (slide in from left)
@@ -75,11 +82,8 @@ func show_dialog(type: DialogType, score: int, combo: int):
 	# if ui_sound_manager:
 	# 	ui_sound_manager.play_sound(ui_sound_manager.UISound.DIALOG_OPEN)
 	tween.tween_property(self, "modulate:a", 1.0, 0.3).set_ease(Tween.EASE_OUT)
-	(
-		tween
-		. tween_property(self, "position:x", 0, 0.3)
-		. set_trans(Tween.TRANS_BACK)
-		. set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "position:x", 0, 0.3).set_trans(Tween.TRANS_BACK).set_ease(
+		Tween.EASE_OUT
 	)
 
 	match type:
@@ -91,7 +95,7 @@ func show_dialog(type: DialogType, score: int, combo: int):
 			action_label.text = "Press SPACE to restart"
 		DialogType.GAME_WIN:
 			title_label.text = "Congratulations!"
-			action_label.text = "You Win! Press SPACE to restart"
+			action_label.text = ""  # Start empty, will show after delay
 
 	score_label.text = "Score: %d" % current_score
 	combo_label.text = "Combo Bonus: 0"
@@ -125,8 +129,11 @@ func update_combo_display(value: int):
 
 func _input(event):
 	if visible and event.is_action_pressed("hit_drum"):
-		# Check if we can continue (for level complete, need to wait)
-		if dialog_type == DialogType.LEVEL_COMPLETE and not can_continue:
+		# Check if we can continue (for level complete and game win, need to wait)
+		if (
+			(dialog_type == DialogType.LEVEL_COMPLETE or dialog_type == DialogType.GAME_WIN)
+			and not can_continue
+		):
 			return  # Ignore input during delay
 
 		hide_dialog()
@@ -139,11 +146,8 @@ func hide_dialog():
 	var tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(self, "modulate:a", 0.0, 0.2).set_ease(Tween.EASE_IN)
-	(
-		tween
-		. tween_property(self, "position:x", -100, 0.2)
-		. set_trans(Tween.TRANS_BACK)
-		. set_ease(Tween.EASE_IN)
+	tween.tween_property(self, "position:x", -100, 0.2).set_trans(Tween.TRANS_BACK).set_ease(
+		Tween.EASE_IN
 	)
 	tween.finished.connect(
 		func():

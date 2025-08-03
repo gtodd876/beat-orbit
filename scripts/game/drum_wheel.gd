@@ -69,6 +69,9 @@ var spin_duration: float = 0.0
 # Public variables
 var hit_targets: Array = []
 var hit_feedback_manager: HitFeedbackManager = null
+# Miss feedback line
+var miss_line: Line2D = null
+var miss_line_timer: float = 0.0
 
 # Visual elements - @onready variables
 @onready var arrow_node = $Arrow
@@ -77,10 +80,6 @@ var hit_feedback_manager: HitFeedbackManager = null
 @onready var screen_shake: ScreenShakeManager = null
 @onready var ui_sound_manager: UISoundManager = null
 @onready var music_player: AudioStreamPlayer = null
-
-# Miss feedback line
-var miss_line: Line2D = null
-var miss_line_timer: float = 0.0
 
 
 func _ready():
@@ -132,8 +131,7 @@ func _ready():
 	update_target_visuals()
 
 	# Start music playback
-	if music_player and music_player.stream:
-		music_player.play()
+	load_music_for_level(GameData.current_level)
 
 
 func setup_hit_targets():
@@ -195,6 +193,10 @@ func _process(delta):
 		if new_beat != current_beat:
 			current_beat = new_beat
 			emit_signal("beat_played", current_beat)
+	elif music_player and music_player.stream and not music_player.playing and is_playing:
+		# Music stopped unexpectedly - restart it only if game is still playing
+		# print("WARNING: Music stopped playing! Restarting...")
+		music_player.play()
 	else:
 		# Fallback to timer-based beats if music isn't playing
 		beat_timer += delta
@@ -524,10 +526,8 @@ func reset_game():
 	current_beat = 0  # Reset to first beat
 	update_target_visuals()
 
-	# Restart music
-	if music_player and music_player.stream:
-		music_player.stop()
-		music_player.play()
+	# Restart music for current level
+	load_music_for_level(GameData.current_level)
 
 
 func start_next_level():
@@ -547,9 +547,8 @@ func start_next_level():
 	# Let HUD know level has started
 	emit_signal("level_started")
 
-	# Restart music for new level
-	if music_player and music_player.stream:
-		music_player.play()
+	# Load and play music for new level
+	load_music_for_level(GameData.current_level)
 
 
 func show_hit_feedback_at_beat(beat_number: int, timing_quality: String):
@@ -688,13 +687,13 @@ func add_pulse_animation(target: Node2D):
 
 func load_level_patterns():
 	# Load patterns from GameData based on current level
-	print("Loading patterns for level ", GameData.current_level)
+	# print("Loading patterns for level ", GameData.current_level)
 	kick_pattern = GameData.get_pattern_for_level(GameData.current_level, "kick")
 	snare_pattern = GameData.get_pattern_for_level(GameData.current_level, "snare")
 	hihat_pattern = GameData.get_pattern_for_level(GameData.current_level, "hihat")
-	print("Kick pattern: ", kick_pattern)
-	print("Snare pattern: ", snare_pattern)
-	print("Hi-hat pattern: ", hihat_pattern)
+	# print("Kick pattern: ", kick_pattern)
+	# print("Snare pattern: ", snare_pattern)
+	# print("Hi-hat pattern: ", hihat_pattern)
 
 
 func show_miss_line(_target_beat: int):
@@ -715,3 +714,24 @@ func show_miss_line(_target_beat: int):
 	# Show the line
 	miss_line.visible = true
 	miss_line_timer = 0.5  # Show for 0.5 seconds
+
+
+func load_music_for_level(level: int):
+	if not music_player:
+		return
+
+	# Stop current music
+	if music_player.playing:
+		music_player.stop()
+
+	# Load the appropriate music track based on level
+	var music_path = "res://assets/audio/music/level-%d-music.wav" % level
+	var music_resource = load(music_path)
+
+	if music_resource:
+		music_player.stream = music_resource
+		music_player.play()
+		# print("Loaded music for level ", level)
+	else:
+		# print("Warning: Could not load music for level ", level)
+		pass

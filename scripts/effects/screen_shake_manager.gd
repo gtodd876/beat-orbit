@@ -26,7 +26,8 @@ func _process(delta):
 		# Calculate shake offset
 		var shake_offset = (
 			Vector2(
-				randf_range(-max_shake_offset.x, max_shake_offset.x), randf_range(-max_shake_offset.y, max_shake_offset.y)
+				randf_range(-max_shake_offset.x, max_shake_offset.x),
+				randf_range(-max_shake_offset.y, max_shake_offset.y)
 			)
 			* _shake_timer
 		)

@@ -22,13 +22,7 @@ var level_patterns = {
 		"hihat": [false, true, false, false, false, true, false, false]
 	},
 	3: {
-		# Syncopated kick, ghost note snare, 16th note hihat feel
-		"kick": [true, false, false, true, false, false, true, false],
-		"snare": [false, true, true, false, false, true, true, false],
-		"hihat": [true, true, true, true, true, true, true, true]
-	},
-	4: {
-		# Complex breakbeat pattern
+		# Complex breakbeat pattern (moved from level 4)
 		"kick": [true, false, false, true, false, true, false, false],
 		"snare": [false, false, true, false, true, false, true, true],
 		"hihat": [true, false, true, true, false, true, false, true]
@@ -41,9 +35,17 @@ func calculate_beat_duration():
 
 
 func update_bpm_for_level(level: int):
-	bpm = base_bpm + ((level - 1) * bpm_increase_per_level)
+	match level:
+		1:
+			bpm = 120.0
+		2:
+			bpm = 132.0
+		3:
+			bpm = 144.0
+		_:
+			bpm = 120.0  # Default to level 1 BPM
 	calculate_beat_duration()
-	print("Level ", level, " BPM: ", bpm)
+	# print("Level ", level, " BPM: ", bpm)
 
 
 func get_pattern_for_level(level: int, drum_type: String) -> Array:

@@ -7,7 +7,7 @@ const HIT_FEEDBACK_SCENE = preload("res://scenes/effects/hit_feedback_text.tscn"
 # Colors for feedback
 const PERFECT_COLOR = Color(1.0, 0.9, 0.2)  # Golden yellow
 const GOOD_COLOR = Color(0.2, 0.8, 1.0)  # Blue from palette
-const MISS_COLOR = Color(1.0, 0.2, 0.2)  # Red
+const MISS_COLOR = Color(0.85, 0.35, 0.85)  # Magenta (HSL 303, 67, 51)
 
 
 func spawn_feedback(pos: Vector2, timing_quality: String):
