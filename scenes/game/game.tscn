@@ -113,28 +113,42 @@ theme_override_constants/margin_bottom = 20
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="UI/HUD/MarginContainer2"]
 layout_mode = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="UI/HUD/MarginContainer2/HBoxContainer2"]
-custom_minimum_size = Vector2(580, 0)
-layout_mode = 2
 alignment = 1
 
-[node name="Score" type="Label" parent="UI/HUD/MarginContainer2/HBoxContainer2/VBoxContainer"]
-visible = false
+[node name="Score" type="Label" parent="UI/HUD/MarginContainer2/HBoxContainer2"]
 layout_mode = 2
 text = "Score: 000"
 label_settings = SubResource("LabelSettings_2a8rs")
 horizontal_alignment = 1
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="UI/HUD/MarginContainer2/HBoxContainer2"]
-layout_mode = 2
-
-[node name="Combo" type="Label" parent="UI/HUD/MarginContainer2/HBoxContainer2/VBoxContainer2"]
+[node name="Combo" type="Label" parent="UI/HUD/MarginContainer2/HBoxContainer2"]
 custom_minimum_size = Vector2(620, 0)
 layout_mode = 2
 text = "Combo: 0"
 label_settings = SubResource("LabelSettings_87uf6")
 horizontal_alignment = 1
+
+[node name="LivesContainer" type="HBoxContainer" parent="UI/HUD/MarginContainer2/HBoxContainer2"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TextureRect" type="TextureRect" parent="UI/HUD/MarginContainer2/HBoxContainer2/LivesContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+texture = ExtResource("4_5jirj")
+expand_mode = 3
+
+[node name="TextureRect2" type="TextureRect" parent="UI/HUD/MarginContainer2/HBoxContainer2/LivesContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+texture = ExtResource("4_5jirj")
+expand_mode = 3
+
+[node name="TextureRect3" type="TextureRect" parent="UI/HUD/MarginContainer2/HBoxContainer2/LivesContainer"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+texture = ExtResource("4_5jirj")
+expand_mode = 3
 
 [node name="PositionLabel" type="Label" parent="UI/HUD"]
 visible = false

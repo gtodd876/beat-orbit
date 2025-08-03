@@ -5,10 +5,11 @@ var combo: int = 0
 var max_combo: int = 0
 var active_beat_cells: Array = []  # Store references to active beat cell sprites
 var current_completion_message = null  # Track current completion message
-var life_sprites: Array = []  # Store references to life indicator sprites
-
-@onready var score_label = $HUD/MarginContainer2/HBoxContainer2/VBoxContainer/Score
-@onready var combo_label = $HUD/MarginContainer2/HBoxContainer2/VBoxContainer2/Combo
+@onready var score_label = $HUD/MarginContainer2/HBoxContainer2/Score
+@onready var combo_label = $HUD/MarginContainer2/HBoxContainer2/Combo
+@onready var life_1 = $HUD/MarginContainer2/HBoxContainer2/LivesContainer/TextureRect
+@onready var life_2 = $HUD/MarginContainer2/HBoxContainer2/LivesContainer/TextureRect2
+@onready var life_3 = $HUD/MarginContainer2/HBoxContainer2/LivesContainer/TextureRect3
 # PatternGridContainer doesn't exist in scene - removed reference
 @onready var position_label = $HUD/PositionLabel
 @onready var controls_label = $HUD/MarginContainer/VBoxContainer2/ControlsLabel
@@ -39,10 +40,11 @@ func _ready():
 	if score_label:
 		score_label.visible = true
 
-	# Create lives display
-	create_lives_display()
+	# Initialize lives display (all 3 lives visible at start)
+	update_lives_display(0)
 
-	update_score_display()
+	# Don't update score display initially - let it use the scene's default text
+	# update_score_display()
 	update_instructions()
 	update_pattern_grid()
 	update_position_label(0)
@@ -78,12 +80,14 @@ func _ready():
 
 
 func update_lives_display(miss_count: int):
-	# Hide life sprites based on miss count
-	for i in range(life_sprites.size()):
-		if i < miss_count:
-			life_sprites[life_sprites.size() - 1 - i].visible = false
-		else:
-			life_sprites[life_sprites.size() - 1 - i].visible = true
+	# Show/hide life indicators based on miss count
+	# Lives are hidden from right to left as misses occur
+	if life_3:
+		life_3.visible = miss_count < 1  # Hide after 1st miss
+	if life_2:
+		life_2.visible = miss_count < 2  # Hide after 2nd miss
+	if life_1:
+		life_1.visible = miss_count < 3  # Hide after 3rd miss
 
 
 func _on_drum_hit(_drum_type, timing_quality, _beat_position):
@@ -185,46 +189,11 @@ func _on_layer_complete(drum_type):
 func update_score_display():
 	if score_label:
 		score_label.text = "Score: %d" % [score]
-		# Animate score label
-		var tween = create_tween()
-		tween.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-		score_label.pivot_offset = score_label.size / 2
-		tween.tween_property(score_label, "scale", Vector2(1.15, 1.15), 0.1)
-		tween.tween_property(score_label, "scale", Vector2(1.0, 1.0), 0.3)
+		# Animation removed - was causing display issues
 
 	if combo_label:
 		combo_label.text = "Combo: %d" % [combo]
-		# Animate combo label with color pulse for milestones
-		var tween = create_tween()
-		combo_label.pivot_offset = combo_label.size / 2
-
-		if combo > 0 and combo % 10 == 0:  # Milestone every 10 combos
-			# Big celebration animation
-			tween.set_parallel(true)
-			# Play combo milestone sound
-			# TEMP: Disabled until proper UI sounds are implemented
-			# if ui_sound_manager:
-			# 	ui_sound_manager.play_combo_milestone()
-			(
-				tween
-				. tween_property(combo_label, "scale", Vector2(1.3, 1.3), 0.15)
-				. set_trans(Tween.TRANS_BACK)
-				. set_ease(Tween.EASE_OUT)
-			)
-			tween.tween_property(combo_label, "modulate", Color(1.0, 0.9, 0.2), 0.15)  # Golden flash
-			tween.chain().set_parallel(true)
-			tween.tween_property(combo_label, "scale", Vector2(1.0, 1.0), 0.4).set_trans(
-				Tween.TRANS_ELASTIC
-			)
-			tween.tween_property(combo_label, "modulate", Color.WHITE, 0.4)
-		elif combo > 0:
-			# Normal combo animation
-			tween.tween_property(combo_label, "scale", Vector2(1.1, 1.1), 0.08).set_trans(
-				Tween.TRANS_QUAD
-			)
-			tween.tween_property(combo_label, "scale", Vector2(1.0, 1.0), 0.2).set_trans(
-				Tween.TRANS_ELASTIC
-			)
+		# Animation removed - was causing display issues
 
 	# Update level display in the title
 	var title_text = "Level %d" % GameData.current_level
@@ -242,35 +211,7 @@ func _input(event):
 		restart_game()
 
 
-func create_lives_display():
-	# Create a container for lives to the right of combo
-	var lives_container = HBoxContainer.new()
-	lives_container.name = "LivesContainer"
-	lives_container.add_theme_constant_override("separation", 10)
-
-	# Position it to the right of the combo label
-	if combo_label and combo_label.get_parent():
-		var parent = combo_label.get_parent()
-		parent.add_child(lives_container)
-
-		# Add some spacing
-		var spacer = Control.new()
-		spacer.custom_minimum_size.x = 50
-		parent.add_child(spacer)
-		parent.move_child(spacer, parent.get_child_count() - 2)
-
-		# Load arrow texture
-		var arrow_texture = load("res://assets/art/sprites/arrow-2x.png")
-
-		# Create 3 life indicators
-		for i in range(3):
-			var life_sprite = TextureRect.new()
-			life_sprite.texture = arrow_texture
-			life_sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-			life_sprite.custom_minimum_size = Vector2(30, 30)  # Small size
-			life_sprite.modulate = Color(0, 1, 1)  # Cyan color to match UI
-			lives_container.add_child(life_sprite)
-			life_sprites.append(life_sprite)
+# Function removed - lives display is now created in the scene file
 
 
 func update_instructions():
