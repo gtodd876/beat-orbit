@@ -388,6 +388,8 @@ The codebase follows GDScript best practices:
 ### Notable Patterns
 
 1. **Tween Animations**: Extensive use for smooth UI
+   - All tweens use `bind_node()` to prevent errors when targets are freed
+   - Example: `tween.bind_node(target)` before animating properties
 2. **Meta Properties**: Storing data on nodes (beat numbers, tweens)
 3. **Signal Chaining**: Events cascade through proper channels
 4. **Resource Preloading**: Scenes/assets loaded at startup
@@ -436,6 +438,11 @@ var time_difference = angle_distance / rotation_speed
    - Pattern grid layout in HUD update_pattern_grid()
    - Dialog animations in GameDialog
    - Score calculations in _on_drum_hit()
+
+5. **Preventing Tween Errors**:
+   - Always use `tween.bind_node(target)` when animating nodes that might be freed
+   - Check `is_instance_valid(node)` before operations in callbacks
+   - Kill existing tweens stored in meta properties before creating new ones
 
 ---
 
