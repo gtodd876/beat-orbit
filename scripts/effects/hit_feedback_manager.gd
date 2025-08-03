@@ -37,6 +37,7 @@ func spawn_feedback(pos: Vector2, timing_quality: String):
 
 	# Create animation sequence
 	var tween = create_tween()
+	tween.bind_node(feedback)  # Bind to prevent errors if freed
 	tween.set_parallel(true)
 
 	# Start state

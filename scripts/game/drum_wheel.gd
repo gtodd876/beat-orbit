@@ -571,6 +571,8 @@ func show_hit_feedback_at_beat(beat_number: int, timing_quality: String):
 
 				var tween = create_tween()
 				tween.set_parallel(true)
+				# Bind the target node to the tween so it won't error if freed
+				tween.bind_node(target)
 				tween.tween_property(target, "scale", Vector2(1.5, 1.5), 0.2)
 				tween.tween_property(target, "modulate:a", 0, 0.2)
 				tween.finished.connect(
@@ -582,6 +584,7 @@ func show_hit_feedback_at_beat(beat_number: int, timing_quality: String):
 			else:
 				# Flash red for miss - make it more noticeable
 				var tween = create_tween()
+				tween.bind_node(target)  # Bind to prevent errors if target is freed
 				var original_modulate = target.modulate
 				# Bright red flash
 				target.modulate = Color(1.5, 0, 0)  # Bright red
@@ -660,6 +663,7 @@ func spawn_hit_particles_at_position(pos: Vector2, timing_quality: String):
 func add_pulse_animation(target: Node2D):
 	# Create a looping pulse animation for the target
 	var tween = create_tween()
+	tween.bind_node(target)  # Bind to prevent errors if target is freed
 	tween.set_loops()
 	tween.set_trans(Tween.TRANS_SINE)
 

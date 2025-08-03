@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://bq5v4npmmltgx"]
+[gd_scene load_steps=22 format=3 uid="uid://bq5v4npmmltgx"]
 
 [ext_resource type="Script" uid="uid://cwlk84px0jcu7" path="res://scripts/game/drum_wheel.gd" id="1_sul5r"]
 [ext_resource type="Texture2D" uid="uid://c6ei7fh6qh2kr" path="res://assets/art/sprites/drum-wheel-2x.png" id="2_2a8rs"]
@@ -14,7 +14,6 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_overlay.tscn" id="10_pause"]
 [ext_resource type="AudioStream" uid="uid://clkim8ed3p3li" path="res://assets/audio/drums/kick/kick3.wav" id="13_uyinl"]
 [ext_resource type="AudioStream" uid="uid://dnwbxk1qtruaw" path="res://assets/audio/drums/snare/snare2.wav" id="14_10c2w"]
-[ext_resource type="Script" path="res://scripts/effects/particle_manager.gd" id="14_pm_script"]
 [ext_resource type="AudioStream" uid="uid://bfjb5dv7mfb5x" path="res://assets/audio/music/level-1-music.wav" id="15_music"]
 [ext_resource type="AudioStream" uid="uid://x4au334quhxt" path="res://assets/audio/drums/hithat/hihat2.wav" id="15_pg2xm"]
 [ext_resource type="PackedScene" path="res://scenes/effects/screen_shake_manager.tscn" id="17_5v6r0"]
@@ -66,9 +65,6 @@ texture = ExtResource("3_kp23o")
 [node name="Arrow" type="Sprite2D" parent="DrumWheel"]
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("4_5jirj")
-
-[node name="ParticleManager" type="Node2D" parent="DrumWheel"]
-script = ExtResource("14_pm_script")
 
 [node name="PatternGrid" type="Node2D" parent="."]
 
