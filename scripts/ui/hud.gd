@@ -18,7 +18,6 @@ var current_completion_message = null  # Track current completion message
 @onready var beat_marker = get_node("/root/Game/PatternGrid/BeatMarker")
 @onready var active_cell_template = get_node("/root/Game/PatternGrid/ActiveCell")
 @onready var game_dialog = $GameDialog
-@onready var ui_sound_manager = null
 @onready var win_music_player: AudioStreamPlayer = null
 
 
@@ -75,8 +74,6 @@ func _ready():
 	# Enable input processing for restart key
 	set_process_input(true)
 
-	# Try to find UI sound manager
-	ui_sound_manager = get_node_or_null("/root/Game/UISoundManager")
 
 
 func update_lives_display(miss_count: int):

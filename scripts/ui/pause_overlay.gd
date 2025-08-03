@@ -3,15 +3,12 @@ extends Control
 signal resume_pressed
 
 var is_paused: bool = false
-@onready var ui_sound_manager = null
 
 
 func _ready():
 	visible = false
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	# Try to find UI sound manager
-	ui_sound_manager = get_node_or_null("/root/Game/UISoundManager")
 
 
 func show_pause():
@@ -23,10 +20,6 @@ func show_pause():
 	modulate.a = 0.0
 	scale = Vector2(0.8, 0.8)
 
-	# Play pause sound
-	# TEMP: Disabled until proper UI sounds are implemented
-	# if ui_sound_manager:
-	# 	ui_sound_manager.play_sound(ui_sound_manager.UISound.PAUSE_IN)
 
 	var tween = create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # Continue during pause
@@ -58,10 +51,6 @@ func hide_pause():
 		func():
 			visible = false
 			get_tree().paused = false
-			# Play unpause sound
-			# TEMP: Disabled until proper UI sounds are implemented
-			# if ui_sound_manager:
-			# 	ui_sound_manager.play_sound(ui_sound_manager.UISound.PAUSE_OUT)
 	)
 
 

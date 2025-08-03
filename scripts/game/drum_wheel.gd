@@ -78,7 +78,6 @@ var miss_line_timer: float = 0.0
 @onready var hit_target_container = $HitTargetContainer
 @onready var beat_positions_ring = $Sprite2D  # The magenta circle showing beat positions
 @onready var screen_shake: ScreenShakeManager = null
-@onready var ui_sound_manager: UISoundManager = null
 @onready var music_player: AudioStreamPlayer = null
 
 
@@ -111,8 +110,6 @@ func _ready():
 	# Try to find screen shake manager
 	screen_shake = get_node_or_null("/root/Game/ScreenShakeManager")
 
-	# Try to find UI sound manager
-	ui_sound_manager = get_node_or_null("/root/Game/UISoundManager")
 
 	# Get music player reference
 	var audio_players = get_node("/root/Game/AudioPlayers")
@@ -390,10 +387,6 @@ func complete_current_layer():
 	if screen_shake:
 		screen_shake.shake_layer_complete()
 
-	# Play layer complete sound
-	# TEMP: Disabled until proper UI sounds are implemented
-	# if ui_sound_manager:
-	# 	ui_sound_manager.play_layer_complete()
 
 	# Move to next layer
 	if current_layer == DrumType.KICK:
@@ -412,10 +405,6 @@ func complete_current_layer():
 		if screen_shake:
 			screen_shake.shake_pattern_complete()
 
-		# Play pattern complete sound
-		# TEMP: Disabled until proper UI sounds are implemented
-		# if ui_sound_manager:
-		# 	ui_sound_manager.play_pattern_complete()
 
 
 func update_target_visuals():

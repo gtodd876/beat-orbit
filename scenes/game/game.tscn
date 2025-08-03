@@ -14,7 +14,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_overlay.tscn" id="10_pause"]
 [ext_resource type="AudioStream" uid="uid://clkim8ed3p3li" path="res://assets/audio/drums/kick/kick3.wav" id="13_uyinl"]
 [ext_resource type="AudioStream" uid="uid://dnwbxk1qtruaw" path="res://assets/audio/drums/snare/snare2.wav" id="14_10c2w"]
-[ext_resource type="Script" uid="uid://bgvj1xd0pbp1b" path="res://scripts/effects/particle_manager.gd" id="14_pm_script"]
+[ext_resource type="Script" path="res://scripts/effects/particle_manager.gd" id="14_pm_script"]
 [ext_resource type="AudioStream" uid="uid://bfjb5dv7mfb5x" path="res://assets/audio/music/level-1-music.wav" id="15_music"]
 [ext_resource type="AudioStream" uid="uid://x4au334quhxt" path="res://assets/audio/drums/hithat/hihat2.wav" id="15_pg2xm"]
 [ext_resource type="PackedScene" path="res://scenes/effects/screen_shake_manager.tscn" id="17_5v6r0"]

@@ -19,7 +19,6 @@ var combo_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ComboCont
 @onready
 var total_label: Label = $PanelContainer/MarginContainer/VBoxContainer/TotalContainer/TotalLabel
 @onready var action_label: Label = $PanelContainer/MarginContainer/VBoxContainer/ActionLabel
-@onready var ui_sound_manager = null
 
 
 func _ready():
@@ -29,8 +28,6 @@ func _ready():
 	z_index = 100
 	set_process(true)
 
-	# Try to find UI sound manager
-	ui_sound_manager = get_node_or_null("/root/Game/UISoundManager")
 
 
 func _process(delta):
@@ -77,10 +74,6 @@ func show_dialog(type: DialogType, score: int, combo: int):
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Play dialog open sound
-	# TEMP: Disabled until proper UI sounds are implemented
-	# if ui_sound_manager:
-	# 	ui_sound_manager.play_sound(ui_sound_manager.UISound.DIALOG_OPEN)
 	tween.tween_property(self, "modulate:a", 1.0, 0.3).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "position:x", 0, 0.3).set_trans(Tween.TRANS_BACK).set_ease(
 		Tween.EASE_OUT
@@ -153,8 +146,4 @@ func hide_dialog():
 		func():
 			visible = false
 			emit_signal("continue_pressed")
-			# Play dialog close sound
-			# TEMP: Disabled until proper UI sounds are implemented
-			# if ui_sound_manager:
-			# 	ui_sound_manager.play_sound(ui_sound_manager.UISound.DIALOG_CLOSE)
 	)
